@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { clearWaSettings, enableWaSettings, getWaSettings, saveWaSettings, testWaSettings } from "@/services/whatsapp-crm.service"
+import { clearWaSettings, connectWaReplies, enableWaSettings, getWaSettings, saveWaSettings, testWaSettings } from "@/services/whatsapp-crm.service"
 import type { WaSettingsInput, WaTestResult } from "@/types/whatsapp-settings.types"
 
 /** Per-field messages the server sends with a 400 (“details”), if any. */
@@ -28,6 +28,7 @@ export function useWaSettingsMutations() {
   return {
     save: useMutation({ mutationFn: (v: WaSettingsInput) => saveWaSettings(v), onSuccess: refresh }),
     test: useMutation({ mutationFn: (sendTo?: string) => testWaSettings(sendTo), onSuccess: refresh, onError: (e) => toast.error(settingsErrorMessage(e)) }),
+    connectReplies: useMutation({ mutationFn: () => connectWaReplies(), onSuccess: (r) => { refresh(); toast[r.ok ? "success" : "error"](r.ok ? "Replies connected — send a WhatsApp message to your number to check" : "Meta did not accept everything — see below") }, onError: (e) => toast.error(settingsErrorMessage(e)) }),
     enable: useMutation({ mutationFn: (on: boolean) => enableWaSettings(on), onSuccess: () => { refresh(); toast.success("Saved") }, onError: (e) => toast.error(settingsErrorMessage(e)) }),
     clear: useMutation({ mutationFn: () => clearWaSettings(), onSuccess: () => { refresh(); toast.success("Saved WhatsApp details removed") }, onError: (e) => toast.error(settingsErrorMessage(e)) }),
   }

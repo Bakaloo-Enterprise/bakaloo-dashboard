@@ -49,7 +49,7 @@ export function CredentialsForm({ view, busy, errors, onSubmit, onRemove }: Prop
   const hasCore = Boolean((v.phoneNumberId.trim() || f.phoneNumberId.value) && (v.accessToken.trim() || f.accessToken.configured))
   const needsTest = view.state !== "CONNECTED"
 
-  const input = (key: Key, opts: { secret?: boolean; mono?: boolean; required?: boolean; saved?: string; source?: string | null; extra?: React.ReactNode } = {}) => {
+  const input = (key: Key, opts: { secret?: boolean; mono?: boolean; required?: boolean; badge?: string; saved?: string; source?: string | null; extra?: React.ReactNode } = {}) => {
     const h = FIELD_HELP[key]
     const err = errors[key]
     const id = `wa-${key}`
@@ -59,7 +59,7 @@ export function CredentialsForm({ view, busy, errors, onSubmit, onRemove }: Prop
         <div className="flex items-center justify-between gap-2">
           <label htmlFor={id} className="text-sm font-medium">
             {h.label}{opts.required && <span className="text-red-600" aria-hidden> *</span>}
-            {!opts.required && <span className="ml-1 text-xs font-normal text-muted-foreground">optional</span>}
+            {!opts.required && (opts.badge ? <span className="ml-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-800">{opts.badge}</span> : <span className="ml-1 text-xs font-normal text-muted-foreground">optional</span>)}
           </label>
           {opts.saved && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"><Check className="h-3 w-3" aria-hidden />Saved · {opts.saved}</span>}
         </div>
@@ -111,8 +111,8 @@ export function CredentialsForm({ view, busy, errors, onSubmit, onRemove }: Prop
         <div className="md:col-span-2">
           {input("accessToken", { secret: true, mono: true, required: true, saved: f.accessToken.configured ? f.accessToken.masked : undefined, source: f.accessToken.source })}
         </div>
-        {input("appSecret", { secret: true, mono: true, saved: f.appSecret.configured ? f.appSecret.masked : undefined, source: f.appSecret.source })}
-        {input("appId", { mono: true, source: f.appId.source })}
+        {input("appSecret", { secret: true, mono: true, badge: "needed for customer replies", saved: f.appSecret.configured ? f.appSecret.masked : undefined, source: f.appSecret.source })}
+        {input("appId", { mono: true, badge: "needed for customer replies", source: f.appId.source })}
         <div className="md:col-span-2">
           {input("verifyToken", {
             mono: true, source: f.verifyToken.source,

@@ -25,8 +25,20 @@ export interface WaTestResult {
   testedAt: string
   durationMs: number
 }
+export interface WaConnectRepliesStep {
+  id: "app" | "waba"
+  label: string
+  status: "pass" | "fail"
+  summary?: string
+  problem?: WaExplainedProblem
+}
+export interface WaConnectRepliesResult {
+  ok: boolean
+  callbackUrl: string
+  steps: WaConnectRepliesStep[]
+}
 export interface WaSettingsView {
-  /** True only for someone who may change the connection (and only while the CRM is released to them). */
+  /** True only for someone who has the WhatsApp settings permission (everyone else gets a read-only view). */
   canManage: boolean
   state: WaConnectionState
   enabled: boolean

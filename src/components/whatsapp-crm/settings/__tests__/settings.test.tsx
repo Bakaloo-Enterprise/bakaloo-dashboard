@@ -8,11 +8,11 @@ const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn(
 vi.mock("sonner", () => ({ toast }))
 vi.mock("next/link", () => ({ default: ({ href, children, ...r }: { href: string; children: ReactNode }) => <a href={href} {...r}>{children}</a> }))
 
-const api = { getWaSettings: vi.fn(), saveWaSettings: vi.fn(), testWaSettings: vi.fn(), enableWaSettings: vi.fn(), clearWaSettings: vi.fn(), getCrmMe: vi.fn(), getAnalyticsOverview: vi.fn(), getRateCards: vi.fn() }
+const api = { getWaSettings: vi.fn(), saveWaSettings: vi.fn(), testWaSettings: vi.fn(), enableWaSettings: vi.fn(), clearWaSettings: vi.fn(), connectWaReplies: vi.fn(), getCrmMe: vi.fn(), getAnalyticsOverview: vi.fn(), getRateCards: vi.fn() }
 vi.mock("@/services/whatsapp-crm.service", async (orig) => ({
   ...(await orig<object>()),
   getWaSettings: (...a: unknown[]) => api.getWaSettings(...a), saveWaSettings: (...a: unknown[]) => api.saveWaSettings(...a), testWaSettings: (...a: unknown[]) => api.testWaSettings(...a),
-  enableWaSettings: (...a: unknown[]) => api.enableWaSettings(...a), clearWaSettings: (...a: unknown[]) => api.clearWaSettings(...a), getCrmMe: (...a: unknown[]) => api.getCrmMe(...a),
+  enableWaSettings: (...a: unknown[]) => api.enableWaSettings(...a), clearWaSettings: (...a: unknown[]) => api.clearWaSettings(...a), connectWaReplies: (...a: unknown[]) => api.connectWaReplies(...a), getCrmMe: (...a: unknown[]) => api.getCrmMe(...a),
   getAnalyticsOverview: (...a: unknown[]) => api.getAnalyticsOverview(...a), getRateCards: (...a: unknown[]) => api.getRateCards(...a),
 }))
 
@@ -239,5 +239,45 @@ describe("after saving", () => {
     expect(screen.queryByRole("button", { name: /Switch WhatsApp o/ })).not.toBeInTheDocument()
     expect(screen.queryByText("Verify token")).not.toBeInTheDocument()
     expect(screen.queryByText("Callback URL")).not.toBeInTheDocument()
+  })
+
+  describe("customer replies panel", () => {
+    const appId = { value: "987654321098765", source: "dashboard" as const }
+    const withReplyDetails = (o: Partial<WaSettingsView> = {}): WaSettingsView => ({
+      ...connected(), fields: { ...connected().fields, appId, appSecret: { configured: true, masked: "••••ab12", source: "dashboard" }, wabaId: { value: "123456789012345", source: "dashboard" }, verifyToken: { configured: true, value: "bk_x", source: "dashboard" } }, ...o,
+    })
+
+    it("connected but no App Secret: says replies are NOT arriving and why, and the connect button is disabled", async () => {
+      api.getWaSettings.mockResolvedValue({ ...connected(), fields: { ...connected().fields, appSecret: { configured: false, masked: "", source: null } } })
+      wrap(<WhatsappSettingsPage />)
+      const panel = await screen.findByRole("region", { name: "Customer replies" })
+      expect(within(panel).getByText("Customer replies are not reaching your inbox yet")).toBeInTheDocument()
+      expect(within(panel).getByText(/we refuse every reply/)).toBeInTheDocument()
+      expect(within(panel).getByRole("button", { name: "Connect replies automatically" })).toBeDisabled()
+      expect(within(panel).getByText(/paste the App ID and App Secret above/)).toBeInTheDocument()
+    })
+
+    it("details saved but nothing arrived yet: the button connects Meta and shows each step's outcome", async () => {
+      api.getWaSettings.mockResolvedValue(withReplyDetails())
+      api.connectWaReplies.mockResolvedValue({ ok: false, callbackUrl: "https://api.bakaloo.in/api/webhook/whatsapp", steps: [
+        { id: "app", label: "Meta app sends events to this server", status: "pass" },
+        { id: "waba", label: "Business Account is subscribed to your app", status: "fail", summary: "Meta refused", problem: { title: "Meta refused", cause: "The token cannot manage this account.", fixes: ["Create a token with whatsapp_business_management."], technical: {}, docs: [] } },
+      ] })
+      wrap(<WhatsappSettingsPage />)
+      const button = await screen.findByRole("button", { name: "Connect replies automatically" })
+      expect(button).toBeEnabled()
+      fireEvent.click(button)
+      await waitFor(() => expect(api.connectWaReplies).toHaveBeenCalledTimes(1))
+      expect(await screen.findByText("Meta did not accept everything:")).toBeInTheDocument()
+      expect(screen.getByText(/The token cannot manage this account/)).toBeInTheDocument()
+      expect(screen.getByText("Create a token with whatsapp_business_management.")).toBeInTheDocument()
+    })
+
+    it("everything in place and a message has arrived: a quiet green line instead", async () => {
+      api.getWaSettings.mockResolvedValue(withReplyDetails({ webhook: { callbackUrl: "https://api.bakaloo.in/api/webhook/whatsapp", lastReceivedAt: "2026-10-02T12:00:00Z", last7d: 4 } }))
+      wrap(<WhatsappSettingsPage />)
+      expect(await screen.findByText("Customer replies are working.")).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Connect replies automatically" })).not.toBeInTheDocument()
+    })
   })
 })

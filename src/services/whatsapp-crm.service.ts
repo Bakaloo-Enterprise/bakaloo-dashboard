@@ -1,5 +1,5 @@
 import api from "@/lib/api"
-import type { WaSettingsInput, WaSettingsView, WaTestResult } from "@/types/whatsapp-settings.types"
+import type { WaConnectRepliesResult, WaSettingsInput, WaSettingsView, WaTestResult } from "@/types/whatsapp-settings.types"
 import type { ApiResponse } from "@/types/api.types"
 import type {
   AudienceOptions,
@@ -79,6 +79,10 @@ export async function saveWaSettings(input: WaSettingsInput) {
 }
 export async function testWaSettings(sendTo?: string) {
   const { data } = await api.post<ApiResponse<WaTestResult>>(`${BASE}/settings/test`, sendTo ? { sendTo } : {})
+  return data.data
+}
+export async function connectWaReplies() {
+  const { data } = await api.post<ApiResponse<WaConnectRepliesResult>>(`${BASE}/settings/connect-replies`, {})
   return data.data
 }
 export async function enableWaSettings(enabled: boolean) {

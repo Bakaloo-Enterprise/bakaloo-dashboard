@@ -6,13 +6,14 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ConnectionHero } from "@/components/whatsapp-crm/settings/ConnectionHero"
 import { CredentialsForm } from "@/components/whatsapp-crm/settings/CredentialsForm"
+import { RepliesStatus } from "@/components/whatsapp-crm/settings/RepliesStatus"
 import { SetupGuide } from "@/components/whatsapp-crm/settings/SetupGuide"
 import { TestMessageCard } from "@/components/whatsapp-crm/settings/TestMessageCard"
 import { TestResults } from "@/components/whatsapp-crm/settings/TestResults"
 import { UsageCard } from "@/components/whatsapp-crm/settings/UsageCard"
 import { WebhookCard } from "@/components/whatsapp-crm/settings/WebhookCard"
 import { fieldErrors, settingsErrorMessage, useWaSettings, useWaSettingsMutations } from "@/hooks/useWhatsappSettings"
-import type { WaSettingsInput, WaTestResult } from "@/types/whatsapp-settings.types"
+import type { WaConnectRepliesResult, WaSettingsInput, WaTestResult } from "@/types/whatsapp-settings.types"
 
 export default function WhatsappSettingsPage() {
   // Everyone signed in may read the connection state; the server says whether THIS person may change it.
@@ -20,6 +21,7 @@ export default function WhatsappSettingsPage() {
   const m = useWaSettingsMutations()
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [result, setResult] = useState<WaTestResult | null>(null)
+  const [connected, setConnected] = useState<WaConnectRepliesResult | null>(null)
 
   const view = settings.data
   const canManage = view?.canManage === true
@@ -70,6 +72,10 @@ export default function WhatsappSettingsPage() {
       {view && canManage && (
         <>
           <ConnectionHero view={view} testing={m.test.isPending} onTest={() => runTest()} onToggle={(on) => m.enable.mutate(on)} toggling={m.enable.isPending} />
+
+          {view.state !== "NOT_CONFIGURED" && (
+            <RepliesStatus view={view} busy={m.connectReplies.isPending} result={connected} onConnect={() => m.connectReplies.mutate(undefined, { onSuccess: setConnected })} />
+          )}
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
             <div className="space-y-6">
