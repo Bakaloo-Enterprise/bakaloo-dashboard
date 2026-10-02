@@ -30,6 +30,31 @@ export type PermissionKey =
   | "banners.manage"
   | "notifications.view"
   | "notifications.manage"
+  | "procurement.view"
+  | "procurement.manage"
+  | "catalog.bulk"
+  | "analytics.business"
+  | "chat.use"
+  | "chat.manage"
+  | "crm.inbox.view"
+  | "crm.inbox.view_all"
+  | "crm.inbox.reply"
+  | "crm.labels.apply"
+  | "crm.labels.manage"
+  | "crm.conversations.assign"
+  | "crm.workload.view"
+  | "crm.pipeline.view"
+  | "crm.pipeline.move"
+  | "crm.bot.manage"
+  | "crm.templates.view"
+  | "crm.templates.send"
+  | "crm.templates.manage"
+  | "crm.campaigns.view"
+  | "crm.campaigns.manage"
+  | "crm.workflows.manage"
+  | "crm.analytics.view"
+  | "crm.rates.manage"
+  | "crm.settings.manage"
 
 /** Permission grouped by module */
 export interface PermissionGroup {
@@ -184,6 +209,52 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { key: "notifications.view", label: "View notifications" },
       { key: "notifications.manage", label: "Send notifications" },
+    ],
+  },
+  {
+    module: "Procurement",
+    permissions: [
+      { key: "procurement.view", label: "View purchases and vendors" },
+      { key: "procurement.manage", label: "Record purchases, split stock, manage vendors" },
+    ],
+  },
+  {
+    module: "Catalog bulk update",
+    permissions: [{ key: "catalog.bulk", label: "Bulk product / price / stock upload" }],
+  },
+  {
+    module: "Business analytics",
+    permissions: [{ key: "analytics.business", label: "View profit, loss and procurement reports" }],
+  },
+  {
+    module: "Team chat",
+    permissions: [
+      { key: "chat.use", label: "Use team chat" },
+      { key: "chat.manage", label: "Manage chat channels" },
+    ],
+  },
+  {
+    module: "WhatsApp CRM",
+    permissions: [
+      { key: "crm.inbox.view", label: "See own and unassigned chats" },
+      { key: "crm.inbox.view_all", label: "See every chat" },
+      { key: "crm.inbox.reply", label: "Reply to customers" },
+      { key: "crm.labels.apply", label: "Apply labels" },
+      { key: "crm.labels.manage", label: "Create / edit labels" },
+      { key: "crm.conversations.assign", label: "Assign chats to agents" },
+      { key: "crm.workload.view", label: "View agent workload" },
+      { key: "crm.pipeline.view", label: "View pipeline" },
+      { key: "crm.pipeline.move", label: "Move pipeline cards" },
+      { key: "crm.bot.manage", label: "Manage the auto-reply bot" },
+      { key: "crm.templates.view", label: "View message templates" },
+      { key: "crm.templates.send", label: "Send templates" },
+      { key: "crm.templates.manage", label: "Create / edit templates" },
+      { key: "crm.campaigns.view", label: "View campaigns" },
+      { key: "crm.campaigns.manage", label: "Create / run campaigns" },
+      { key: "crm.workflows.manage", label: "Manage workflows" },
+      { key: "crm.analytics.view", label: "View WhatsApp analytics" },
+      { key: "crm.rates.manage", label: "Manage message rates" },
+      { key: "crm.settings.manage", label: "Change WhatsApp settings" },
     ],
   },
 ]

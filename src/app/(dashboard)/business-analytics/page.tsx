@@ -9,7 +9,7 @@ import { PeriodBar, type PeriodState } from "@/components/business/PeriodBar"
 import { ReconciliationTable } from "@/components/business/ReconciliationTable"
 import { VendorTable } from "@/components/business/VendorTable"
 import { CARD_HELP, formatCount, formatPct, formatRupees, periodProblem, toFilters, toPeriodQuery } from "@/components/business/business-helpers"
-import { useBizMe, useChannels, useOverview, useTopCustomers, useTopProducts, useStorePerf, useVendorReport, useReconciliation } from "@/hooks/useBusiness"
+import { useBizMe, useChannels, useOverview, useTopCustomers, useTopProducts, useStorePerf, useAnalyticsVendors, useAnalyticsReconciliation } from "@/hooks/useBusiness"
 import { cn } from "@/lib/utils"
 
 const DailyGross = dynamic(() => import("@/components/business/DailyGross"), { ssr: false, loading: () => <Skeleton className="h-60 w-full" /> })
@@ -39,8 +39,8 @@ export default function BusinessAnalyticsPage() {
   const customers = useTopCustomers(f, ok && tab === "customers")
   const stores = useStorePerf(f, ok && tab === "stores")
   const channels = useChannels(f, ok && tab === "channels")
-  const vendors = useVendorReport({ ...toPeriodQuery(period), ...(vendorId ? { vendorId } : {}) }, ok && tab === "vendors")
-  const recon = useReconciliation(toPeriodQuery(period), ok && tab === "reconciliation")
+  const vendors = useAnalyticsVendors({ ...toPeriodQuery(period), ...(vendorId ? { vendorId } : {}) }, ok && tab === "vendors")
+  const recon = useAnalyticsReconciliation(toPeriodQuery(period), ok && tab === "reconciliation")
 
   if (me.isLoading) return <Skeleton className="h-40 w-full" />
   if (!allowed) return <Forbidden />

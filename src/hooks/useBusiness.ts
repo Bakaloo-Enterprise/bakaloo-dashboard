@@ -18,6 +18,10 @@ export function useBizMe() {
 export const useVendors = (includeInactive = false) => useQuery({ queryKey: ["biz", "vendors", includeInactive], queryFn: () => S.getVendors(includeInactive), staleTime: 30_000 })
 export const useEntries = (params: Parameters<typeof S.getEntries>[0]) => useQuery({ queryKey: ["biz", "entries", params], queryFn: () => S.getEntries(params), placeholderData: (p) => p })
 export const useEntry = (id: string | null) => useQuery({ queryKey: ["biz", "entry", id], queryFn: () => S.getEntry(id as string), enabled: Boolean(id), retry: false })
+// Business Analytics must not depend on the Procurement lock, so it reads the same reports through its own endpoints.
+export const useAnalyticsVendors = (q: PeriodQuery & { vendorId?: string }, enabled = true) => useQuery({ queryKey: ["biz", "analytics-vendors", q], queryFn: () => S.getAnalyticsVendors(q), enabled, placeholderData: (p) => p })
+export const useAnalyticsReconciliation = (q: PeriodQuery & { productId?: string }, enabled = true) => useQuery({ queryKey: ["biz", "analytics-reconciliation", q], queryFn: () => S.getAnalyticsReconciliation(q), enabled, placeholderData: (p) => p })
+
 export const useVendorReport = (q: PeriodQuery & { vendorId?: string }, enabled = true) => useQuery({ queryKey: ["biz", "vendor-report", q], queryFn: () => S.getVendorReport(q), enabled, placeholderData: (p) => p })
 export const useReconciliation = (q: PeriodQuery & { productId?: string }, enabled = true) => useQuery({ queryKey: ["biz", "reconciliation", q], queryFn: () => S.getReconciliation(q), enabled, placeholderData: (p) => p })
 

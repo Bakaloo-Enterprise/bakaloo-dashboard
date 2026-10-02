@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils"
 const PAGE_SIZE = 30
 
 const ENTITY_TYPES = [
-  { value: "", label: "All Entities" },
+  { value: "__all__", label: "All Entities" },
   { value: "order", label: "Orders" },
   { value: "product", label: "Products" },
   { value: "shop", label: "Shops" },
@@ -201,7 +201,7 @@ export default function HQAuditLogsPage() {
               />
             </div>
 
-            <Select value={entityType} onValueChange={(v) => { setEntityType(v); setPage(1) }}>
+            <Select value={entityType || "__all__"} onValueChange={(v) => { setEntityType(v === "__all__" ? "" : v); setPage(1) }}>
               <SelectTrigger className="h-9 w-[160px]" aria-label="Filter by entity type">
                 <Filter className="h-3.5 w-3.5 mr-1.5" />
                 <SelectValue placeholder="Entity Type" />

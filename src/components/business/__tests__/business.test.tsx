@@ -20,7 +20,7 @@ vi.mock("@/services/business.service", async (orig) => ({
   getBizMe: (...a: unknown[]) => api.getBizMe(...a), getVendors: (...a: unknown[]) => api.getVendors(...a), createEntry: (...a: unknown[]) => api.createEntry(...a),
   allocateEntry: (...a: unknown[]) => api.allocateEntry(...a), adjustEntry: (...a: unknown[]) => api.adjustEntry(...a), getUploadRows: (...a: unknown[]) => api.getUploadRows(...a),
   applyUpload: (...a: unknown[]) => api.applyUpload(...a), discardUpload: (...a: unknown[]) => api.discardUpload(...a), getOverview: (...a: unknown[]) => api.getOverview(...a),
-  getReconciliation: (...a: unknown[]) => api.getReconciliation(...a), getTopProducts: (...a: unknown[]) => api.getTopProducts(...a),
+  getReconciliation: (...a: unknown[]) => api.getReconciliation(...a), getAnalyticsReconciliation: (...a: unknown[]) => api.getReconciliation(...a), getTopProducts: (...a: unknown[]) => api.getTopProducts(...a),
 }))
 
 import BusinessAnalyticsPage from "@/app/(dashboard)/business-analytics/page"

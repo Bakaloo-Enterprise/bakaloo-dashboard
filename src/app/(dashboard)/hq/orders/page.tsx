@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils"
 const PAGE_SIZE = 20
 
 const ORDER_STATUSES = [
-  { value: "", label: "All Statuses" },
+  { value: "__all__", label: "All Statuses" },
   { value: "PENDING", label: "Pending" },
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "PREPARING", label: "Preparing" },
@@ -174,7 +174,7 @@ export default function HQOrdersPage() {
             className="h-9 pl-9"
           />
         </div>
-        <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1) }}>
+        <Select value={status || "__all__"} onValueChange={(v) => { setStatus(v === "__all__" ? "" : v); setPage(1) }}>
           <SelectTrigger className="h-9 w-[150px]" aria-label="Filter by status">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
@@ -184,12 +184,12 @@ export default function HQOrdersPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={shopId} onValueChange={(v) => { setShopId(v); setPage(1) }}>
+        <Select value={shopId || "__all__"} onValueChange={(v) => { setShopId(v === "__all__" ? "" : v); setPage(1) }}>
           <SelectTrigger className="h-9 w-[180px]" aria-label="Filter by shop">
             <SelectValue placeholder="All Shops" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Shops</SelectItem>
+            <SelectItem value="__all__">All Shops</SelectItem>
             {shops.map((shop) => (
               <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
             ))}

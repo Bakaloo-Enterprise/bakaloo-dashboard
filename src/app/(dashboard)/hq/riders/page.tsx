@@ -157,7 +157,7 @@ export default function HQRidersPage() {
       cell: (row) => (
         <div className="flex items-center gap-1">
           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-sm tabular-nums">{row.rating.toFixed(1)}</span>
+          <span className="text-sm tabular-nums">{Number(row.rating ?? 0).toFixed(1)}</span>
         </div>
       ),
     },
@@ -238,22 +238,22 @@ export default function HQRidersPage() {
             className="h-9 pl-9"
           />
         </div>
-        <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1) }}>
+        <Select value={status || "__all__"} onValueChange={(v) => { setStatus(v === "__all__" ? "" : v); setPage(1) }}>
           <SelectTrigger className="h-9 w-[140px]" aria-label="Filter by online status">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="__all__">All Status</SelectItem>
             <SelectItem value="online">Online</SelectItem>
             <SelectItem value="offline">Offline</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={approvalFilter} onValueChange={(v) => { setApprovalFilter(v); setPage(1) }}>
+        <Select value={approvalFilter || "__all__"} onValueChange={(v) => { setApprovalFilter(v === "__all__" ? "" : v); setPage(1) }}>
           <SelectTrigger className="h-9 w-[160px]" aria-label="Filter by approval">
             <SelectValue placeholder="All Approval" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="__all__">All</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="pending">Pending Approval</SelectItem>
           </SelectContent>

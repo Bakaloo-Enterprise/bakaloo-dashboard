@@ -40,20 +40,20 @@ import { useActiveShopsForSwitcher } from "@/hooks/useShops"
 import { hqService } from "@/services/hq.service"
 import type { HQReportFilters } from "@/services/hq.service"
 
-// Fallback report types when backend hasn't shipped the endpoint yet
+// Shown only if the report list cannot be loaded; same ids the backend runs.
 const FALLBACK_REPORT_TYPES = [
-  { id: "sales-summary", name: "Sales Summary", description: "Revenue and order totals by period" },
+  { id: "gmv", name: "GMV", description: "Gross merchandise value by day" },
+  { id: "orders", name: "Orders", description: "Order counts and status breakdown" },
+  { id: "revenue", name: "Revenue", description: "Gross, refunded and net revenue by day" },
+  { id: "refunds", name: "Refunds", description: "Refund counts and amounts by day" },
   { id: "shop-performance", name: "Shop Performance", description: "Per-shop KPIs comparison" },
+  { id: "top-shops", name: "Top Shops", description: "Best performing shops" },
+  { id: "top-products", name: "Top Products", description: "Top selling products" },
+  { id: "low-stock", name: "Low Stock", description: "Products with 10 or fewer units left" },
   { id: "rider-performance", name: "Rider Performance", description: "Delivery metrics per rider" },
-  { id: "customer-acquisition", name: "Customer Acquisition", description: "New vs returning customers" },
-  { id: "product-performance", name: "Product Performance", description: "Top selling products" },
-  { id: "category-breakdown", name: "Category Breakdown", description: "Revenue by category" },
-  { id: "payment-methods", name: "Payment Methods", description: "Payment method distribution" },
-  { id: "delivery-metrics", name: "Delivery Metrics", description: "Delivery time and distance stats" },
-  { id: "coupon-usage", name: "Coupon Usage", description: "Coupon redemption and savings" },
-  { id: "cancellation-report", name: "Cancellation Report", description: "Order cancellation reasons" },
-  { id: "revenue-by-area", name: "Revenue by Area", description: "Geographic revenue distribution" },
-  { id: "commission-report", name: "Commission Report", description: "Platform commission breakdown" },
+  { id: "coupon-usage", name: "Coupon Usage", description: "Coupon redemption and discount given" },
+  { id: "payouts", name: "Payouts", description: "Shop payout history" },
+  { id: "customer-acquisition", name: "Customer Acquisition", description: "New customers in the period" },
 ]
 
 const reportFiltersSchema = z.object({
@@ -175,14 +175,14 @@ export default function HQReportsPage() {
               <div className="space-y-1">
                 <Label htmlFor="shop_filter">Shop (optional)</Label>
                 <Select
-                  value={watch("shop_id") ?? ""}
-                  onValueChange={(v) => setValue("shop_id", v)}
+                  value={watch("shop_id") || "__all__"}
+                  onValueChange={(v) => setValue("shop_id", v === "__all__" ? "" : v)}
                 >
                   <SelectTrigger id="shop_filter" aria-label="Filter by shop">
                     <SelectValue placeholder="All Shops" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Shops</SelectItem>
+                    <SelectItem value="__all__">All Shops</SelectItem>
                     {shops.map((shop) => (
                       <SelectItem key={shop.id} value={shop.id}>{shop.name}</SelectItem>
                     ))}
