@@ -32,7 +32,7 @@ export function UsageCard() {
       </header>
 
       {!allowed ? (
-        <p role="status" className="text-sm text-muted-foreground">You do not have access to WhatsApp analytics, so usage and charges are hidden here.</p>
+        <p role="status" className="text-sm text-muted-foreground">Usage and charges will show here once WhatsApp analytics is available to you.</p>
       ) : overview.isLoading ? <Skeleton className="h-28 w-full" /> : overview.isError || !t || !cost ? (
         <p role="alert" className="text-sm text-red-600">Could not load usage.</p>
       ) : (
