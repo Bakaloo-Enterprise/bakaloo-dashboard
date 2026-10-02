@@ -30,13 +30,25 @@ import {
   type RouteGuard,
 } from "@/lib/permissions"
 
+/** The server's own reason (e.g. "A user with this email already exists") beats a generic failure line. */
+function reason(err: unknown, fallback: string): string {
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  return typeof message === "string" && message.trim() && message.trim().length < 200 ? message.trim() : fallback
+}
+
+
 /* ── Roles ── */
+
+/** A permission refusal will not fix itself — fail at once instead of retrying (and flashing an empty list). */
+const noRetryOnForbidden = (count: number, err: unknown) =>
+  (err as { response?: { status?: number } })?.response?.status !== 403 && count < 2
 
 export function useRoles() {
   return useQuery({
     queryKey: ["roles"],
     queryFn: getRoles,
     staleTime: 5 * 60 * 1000,
+    retry: noRetryOnForbidden,
   })
 }
 
@@ -48,7 +60,7 @@ export function useCreateRole() {
       qc.invalidateQueries({ queryKey: ["roles"] })
       toast.success("Role created")
     },
-    onError: () => toast.error("Failed to create role"),
+    onError: (err) => toast.error(reason(err, "Failed to create role")),
   })
 }
 
@@ -61,7 +73,7 @@ export function useUpdateRole() {
       qc.invalidateQueries({ queryKey: ["roles"] })
       toast.success("Role updated")
     },
-    onError: () => toast.error("Failed to update role"),
+    onError: (err) => toast.error(reason(err, "Failed to update role")),
   })
 }
 
@@ -73,7 +85,7 @@ export function useDeleteRole() {
       qc.invalidateQueries({ queryKey: ["roles"] })
       toast.success("Role deleted")
     },
-    onError: () => toast.error("Failed to delete role"),
+    onError: (err) => toast.error(reason(err, "Failed to delete role")),
   })
 }
 
@@ -93,6 +105,7 @@ export function useTeamMembers() {
     mode === "HQ_MODE" ? "ALL" : activeShopId ?? NONE_SHOP_KEY
 
   return useQuery({
+    retry: noRetryOnForbidden,
     // Keyed under the central `team` tag so the Shop_Switcher predicate
     // invalidation reaches every cache entry on a shop pivot (Req 3.4,
     // 10.3). The `members` discriminator lets us add adjacent
@@ -116,7 +129,7 @@ export function useInviteMember() {
       qc.invalidateQueries({ queryKey: ["team"] })
       toast.success("Team member invited")
     },
-    onError: () => toast.error("Failed to invite member"),
+    onError: (err) => toast.error(reason(err, "Failed to invite member")),
   })
 }
 
@@ -129,7 +142,7 @@ export function useUpdateMember() {
       qc.invalidateQueries({ queryKey: ["team"] })
       toast.success("Member updated")
     },
-    onError: () => toast.error("Failed to update member"),
+    onError: (err) => toast.error(reason(err, "Failed to update member")),
   })
 }
 
@@ -141,7 +154,7 @@ export function useRemoveMember() {
       qc.invalidateQueries({ queryKey: ["team"] })
       toast.success("Member removed")
     },
-    onError: () => toast.error("Failed to remove member"),
+    onError: (err) => toast.error(reason(err, "Failed to remove member")),
   })
 }
 
@@ -155,7 +168,7 @@ export function useRemoveMember() {
 export function useResetMemberPassword() {
   return useMutation({
     mutationFn: (memberId: string) => resetMemberPassword(memberId),
-    onError: () => toast.error("Failed to reset password"),
+    onError: (err) => toast.error(reason(err, "Failed to reset password")),
   })
 }
 

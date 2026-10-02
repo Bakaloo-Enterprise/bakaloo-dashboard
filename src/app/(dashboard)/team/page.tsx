@@ -17,6 +17,7 @@ import {
   Copy,
 } from "lucide-react"
 import { toast } from "sonner"
+import { Forbidden } from "@/components/shared/forbidden"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton"
 import { EmptyState } from "@/components/shared/EmptyState"
@@ -92,6 +93,9 @@ function TeamContent() {
   const [activeTab, setActiveTab] = useState("members")
   const { can } = usePermissions()
   const canManageTeam = can("team.manage")
+  // The server decides who may see the team (role permission team.view). Same query the Roles tab uses, so no extra request.
+  const rolesProbe = useRoles()
+  if ((rolesProbe.error as { response?: { status?: number } } | null)?.response?.status === 403) return <Forbidden />
 
   return (
     <div className="space-y-6">
@@ -309,7 +313,7 @@ function MembersTab() {
                 <SelectValue placeholder="Choose role..." />
               </SelectTrigger>
               <SelectContent>
-                {(roles ?? []).map((r) => (
+                {assignable(roles).map((r) => (
                   <SelectItem key={r.id} value={r.id}>
                     {r.name}
                   </SelectItem>
@@ -654,6 +658,10 @@ function RoleEditorDialog({
 
 /* ─────────────────── Invite Member Button/Dialog ─────────── */
 
+/** Built-in HQ levels the dashboard cannot sign in yet — the server refuses them, so do not offer them. */
+const CANNOT_SIGN_IN_ROLES = new Set(["HQ_FINANCE", "HQ_MANAGER", "HQ_SUPPORT"])
+const assignable = <T extends { name: string }>(roles: T[] | undefined): T[] => (roles ?? []).filter((r) => !CANNOT_SIGN_IN_ROLES.has(r.name))
+
 function InviteMemberButton() {
   const [open, setOpen] = useState(false)
   const { data: roles } = useRoles()
@@ -742,7 +750,7 @@ function InviteMemberButton() {
                   <SelectValue placeholder="Select role..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {(roles ?? []).map((r) => (
+                  {assignable(roles).map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.name} — {r.permissions.length} permissions
                     </SelectItem>
