@@ -6,8 +6,8 @@ export interface WaExplainedProblem {
   title: string
   cause: string
   fixes: string[]
-  technical: { httpStatus?: number | null; code?: number | null; subcode?: number | null; type?: string | null; message?: string; fbtraceId?: string | null; network?: string | null }
-  docs: string | null
+  technical?: { httpStatus?: number | null; code?: number | null; subcode?: number | null; type?: string | null; message?: string; fbtraceId?: string | null; network?: string | null }
+  docs?: string | null
 }
 export interface WaCheck {
   id: "credentials" | "phone" | "waba" | "templates" | "token" | "webhook" | "message"

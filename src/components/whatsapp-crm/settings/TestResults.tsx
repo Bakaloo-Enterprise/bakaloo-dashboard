@@ -8,7 +8,8 @@ import { CHECK_STYLE, copyToClipboard, formatWhen } from "./settings-helpers"
 
 const ICON = { pass: CheckCircle2, warn: AlertTriangle, fail: XCircle, skip: MinusCircle } as const
 
-function Technical({ t }: { t: NonNullable<WaCheck["problem"]>["technical"] }) {
+function Technical({ t }: { t?: NonNullable<WaCheck["problem"]>["technical"] }) {
+  if (!t) return null // older results, and plain-language problems, carry no technical block
   const rows = [["HTTP status", t.httpStatus], ["Meta error code", t.code], ["Sub-code", t.subcode], ["Type", t.type], ["Network", t.network], ["Meta’s message", t.message], ["Trace ID (for support)", t.fbtraceId]].filter(([, v]) => v !== null && v !== undefined && v !== "")
   if (rows.length === 0) return null
   const text = rows.map(([k, v]) => `${k}: ${v}`).join("\n")
@@ -52,10 +53,10 @@ export function TestResults({ result }: { result: WaTestResult }) {
                     <div className="mt-3 rounded-lg border border-dashed p-3 text-sm">
                       <p className="font-semibold">{c.problem.title}</p>
                       <p className="mt-0.5 text-muted-foreground">{c.problem.cause}</p>
-                      {c.problem.fixes.length > 0 && (
+                      {(c.problem.fixes ?? []).length > 0 && (
                         <>
                           <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">How to fix it</p>
-                          <ol className="mt-1 list-decimal space-y-1 pl-5">{c.problem.fixes.map((f) => <li key={f}>{f}</li>)}</ol>
+                          <ol className="mt-1 list-decimal space-y-1 pl-5">{(c.problem.fixes ?? []).map((f) => <li key={f}>{f}</li>)}</ol>
                         </>
                       )}
                       <Technical t={c.problem.technical} />

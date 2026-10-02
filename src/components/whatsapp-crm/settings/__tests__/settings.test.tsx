@@ -280,4 +280,23 @@ describe("after saving", () => {
       expect(screen.queryByRole("button", { name: "Connect replies automatically" })).not.toBeInTheDocument()
     })
   })
+
+  describe("a saved test result without a technical block (a plain-words problem)", () => {
+    const PLAIN: WaTestResult = {
+      ok: true, level: "PARTIAL", headline: "Connected — 1 thing to look at.", testedAt: "2026-10-02T14:15:34.122Z", durationMs: 2992,
+      checks: [
+        { id: "phone", label: "Access token & Phone number ID", status: "pass", summary: "Meta confirmed +1 555-158-7511." },
+        // exactly what the server saved on 2 Oct: a problem with title / cause / fixes only — no technical, no docs
+        { id: "webhook", label: "Incoming messages (webhook)", status: "warn", summary: "Customer replies cannot be received yet — the App Secret is missing.", problem: { title: "Customer replies are blocked until the App Secret is saved", cause: "Meta signs every message with your App Secret.", fixes: ["Paste the App secret and press Save only."] } as never },
+      ],
+    }
+    it("renders the settings page instead of crashing", async () => {
+      api.getWaSettings.mockResolvedValue({ ...connected(), lastTest: PLAIN, fields: { ...connected().fields, appSecret: { configured: false, masked: "", source: null } } })
+      wrap(<WhatsappSettingsPage />)
+      const results = await screen.findByRole("region", { name: "Test results" })
+      expect(within(results).getByText("Customer replies are blocked until the App Secret is saved")).toBeInTheDocument()
+      expect(within(results).getByText("Paste the App secret and press Save only.")).toBeInTheDocument()
+      expect(within(results).queryByText("Technical details")).not.toBeInTheDocument()
+    })
+  })
 })

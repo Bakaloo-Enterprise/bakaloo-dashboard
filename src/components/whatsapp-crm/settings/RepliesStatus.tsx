@@ -79,7 +79,7 @@ export function RepliesStatus({ view, busy, result, onConnect }: Props) {
                   {s.problem && (
                     <div className="mt-1 text-xs text-muted-foreground">
                       <p>{s.problem.cause}</p>
-                      <ul className="mt-1 list-disc pl-4">{s.problem.fixes.map((fx) => <li key={fx}>{fx}</li>)}</ul>
+                      <ul className="mt-1 list-disc pl-4">{(s.problem.fixes ?? []).map((fx) => <li key={fx}>{fx}</li>)}</ul>
                     </div>
                   )}
                 </div>
