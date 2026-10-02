@@ -40,6 +40,8 @@ export function useFeatureAccess(key: FeatureKey) {
 
 /** The feature a dashboard path belongs to, or null for everything that is not locked. */
 export function featureForPath(path: string): FeatureKey | null {
+  // The connection page is open for reading by every signed-in admin (the server hides the secrets and the editing).
+  if (path === "/whatsapp-crm/settings") return null
   if (path === "/whatsapp-crm/chat" || path.startsWith("/whatsapp-crm/chat/")) return "team_chat"
   if (path === "/whatsapp-crm" || path.startsWith("/whatsapp-crm/")) return "whatsapp_crm"
   if (path === "/procurement" || path.startsWith("/procurement/")) return "procurement"

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { Forbidden } from "@/components/shared/forbidden"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ConnectionHero } from "@/components/whatsapp-crm/settings/ConnectionHero"
 import { CredentialsForm } from "@/components/whatsapp-crm/settings/CredentialsForm"
@@ -12,22 +11,18 @@ import { TestMessageCard } from "@/components/whatsapp-crm/settings/TestMessageC
 import { TestResults } from "@/components/whatsapp-crm/settings/TestResults"
 import { UsageCard } from "@/components/whatsapp-crm/settings/UsageCard"
 import { WebhookCard } from "@/components/whatsapp-crm/settings/WebhookCard"
-import { useCrmMe } from "@/hooks/useWhatsappCrm"
 import { fieldErrors, settingsErrorMessage, useWaSettings, useWaSettingsMutations } from "@/hooks/useWhatsappSettings"
 import type { WaSettingsInput, WaTestResult } from "@/types/whatsapp-settings.types"
 
 export default function WhatsappSettingsPage() {
-  const me = useCrmMe()
-  const allowed = me.can("crm.settings.manage")
-  const settings = useWaSettings(allowed)
+  // Everyone signed in may read the connection state; the server says whether THIS person may change it.
+  const settings = useWaSettings(true)
   const m = useWaSettingsMutations()
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [result, setResult] = useState<WaTestResult | null>(null)
 
-  if (me.isLoading) return <Skeleton className="h-48 w-full" />
-  if (!allowed) return <Forbidden />
-
   const view = settings.data
+  const canManage = view?.canManage === true
   const shown = result ?? view?.lastTest ?? null
   const working = m.save.isPending || m.test.isPending
 
@@ -51,12 +46,28 @@ export default function WhatsappSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <PageHeader title="WhatsApp settings" subtitle="Connect your Meta WhatsApp Business API, test it, and keep an eye on usage and charges." />
+      <PageHeader
+        title="WhatsApp settings"
+        subtitle={view && !canManage ? "See whether WhatsApp is connected." : "Connect your Meta WhatsApp Business API, test it, and keep an eye on usage and charges."}
+      />
 
       {settings.isLoading && <Skeleton className="h-40 w-full rounded-2xl" />}
       {settings.isError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">Could not load the settings. {settingsErrorMessage(settings.error)}</p>}
 
-      {view && (
+      {view && !canManage && (
+        <>
+          <ConnectionHero view={view} readOnly testing={false} onTest={() => undefined} onToggle={() => undefined} toggling={false} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <WebhookCard view={view} readOnly />
+            <section aria-label="Who can change this" className="space-y-2 rounded-2xl border bg-card p-6 text-sm text-muted-foreground shadow-sm">
+              <h2 className="text-base font-semibold text-foreground">Changing the connection</h2>
+              <p>Only people who have been given the WhatsApp settings permission can change the connection details, test it or switch it on and off. Ask an administrator if something needs to change.</p>
+            </section>
+          </div>
+        </>
+      )}
+
+      {view && canManage && (
         <>
           <ConnectionHero view={view} testing={m.test.isPending} onTest={() => runTest()} onToggle={(on) => m.enable.mutate(on)} toggling={m.enable.isPending} />
 

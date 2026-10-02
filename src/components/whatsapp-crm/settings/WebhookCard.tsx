@@ -19,7 +19,7 @@ function CopyRow({ label, value, mono = true }: { label: string; value: string |
 }
 
 /** What to paste into Meta so customer replies and delivery ticks reach us. */
-export function WebhookCard({ view }: { view: WaSettingsView }) {
+export function WebhookCard({ view, readOnly = false }: { view: WaSettingsView; readOnly?: boolean }) {
   const last = view.webhook.lastReceivedAt
   return (
     <section aria-label="Webhook" className="space-y-4 rounded-2xl border bg-card p-6 shadow-sm">
@@ -30,14 +30,14 @@ export function WebhookCard({ view }: { view: WaSettingsView }) {
           <p className="text-sm text-muted-foreground">So customer replies and “delivered / read” ticks show up in your inbox.</p>
         </div>
       </header>
-      <CopyRow label="Callback URL" value={view.webhook.callbackUrl} />
-      <CopyRow label="Verify token" value={view.fields.verifyToken.value} />
-      <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+      {!readOnly && <CopyRow label="Callback URL" value={view.webhook.callbackUrl} />}
+      {!readOnly && <CopyRow label="Verify token" value={view.fields.verifyToken.value} />}
+      {!readOnly && <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
         <li>Meta → your app → <strong>WhatsApp → Configuration</strong> → Webhook → <strong>Edit</strong>.</li>
         <li>Paste the Callback URL and the Verify token above, then <strong>Verify and save</strong>.</li>
         <li>Under Webhook fields, <strong>Subscribe</strong> to <strong>messages</strong> (and message_template_status_update).</li>
         <li>Send a WhatsApp message to your business number — it should appear in the inbox.</li>
-      </ol>
+      </ol>}
       <p role="status" className={`rounded-lg px-3 py-2 text-sm ${last ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-900"}`}>
         {last ? `Last event from Meta: ${formatWhen(last)} · ${view.webhook.last7d} in the last 7 days.` : "Nothing received from Meta yet."}
       </p>

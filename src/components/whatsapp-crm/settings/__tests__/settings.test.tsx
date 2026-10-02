@@ -26,6 +26,7 @@ beforeAll(() => {
 const wrap = (ui: ReactNode) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>)
 
 const empty = (): WaSettingsView => ({
+  canManage: true,
   state: "NOT_CONFIGURED", enabled: false, enabledSource: "server", connectedAt: null, lastTestedAt: null, lastTest: null, apiVersion: "v25.0",
   fields: { phoneNumberId: { value: null, source: null }, wabaId: { value: null, source: null }, appId: { value: null, source: null }, accessToken: { configured: false, masked: "", source: null }, appSecret: { configured: false, masked: "", source: null }, verifyToken: { configured: false, value: null, source: null } },
   webhook: { callbackUrl: "https://api.bakaloo.in/api/webhook/whatsapp", lastReceivedAt: null, last7d: 0 },
@@ -203,11 +204,11 @@ describe("WhatsApp settings page", () => {
     expect(screen.getByText(/5 delivered message\(s\) have no price/)).toBeInTheDocument()
   })
 
-  it("is not available without the settings permission, and asks the server for nothing", async () => {
-    api.getCrmMe.mockResolvedValue({ userId: "u", isSuper: false, permissions: ["crm.inbox.view"] })
+  it("without the settings permission the page still opens, but as a read-only status (the server decides)", async () => {
+    api.getWaSettings.mockResolvedValue({ ...empty(), canManage: false })
     wrap(<WhatsappSettingsPage />)
-    await waitFor(() => expect(screen.queryByText("WhatsApp settings")).toBeNull())
-    expect(api.getWaSettings).not.toHaveBeenCalled()
+    expect(await screen.findByText("WhatsApp is not connected")).toBeInTheDocument()
+    expect(screen.queryByText("Connect your WhatsApp Business number")).not.toBeInTheDocument()
   })
 })
 
@@ -225,5 +226,18 @@ describe("after saving", () => {
     await waitFor(() => expect(api.saveWaSettings).toHaveBeenCalled())
     await waitFor(() => expect((screen.getByLabelText(/^Access token/) as HTMLInputElement).value).toBe(""))
     expect(screen.getByText(/Saved · EAAG…xYz4/)).toBeInTheDocument()
+  })
+
+  it("read-only for someone who may not manage it: shows the status, hides the form, test, switch and verify token", async () => {
+    api.getWaSettings.mockResolvedValue({ ...connected(), canManage: false, fields: { ...connected().fields, verifyToken: { configured: true, value: "", source: "dashboard" } } })
+    wrap(<WhatsappSettingsPage />)
+    expect(await screen.findByText("See whether WhatsApp is connected.")).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: "Webhook" })).toBeInTheDocument()
+    expect(screen.getByText(/Only people who have been given the WhatsApp settings permission/)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/^Access token/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Test connection" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Switch WhatsApp o/ })).not.toBeInTheDocument()
+    expect(screen.queryByText("Verify token")).not.toBeInTheDocument()
+    expect(screen.queryByText("Callback URL")).not.toBeInTheDocument()
   })
 })

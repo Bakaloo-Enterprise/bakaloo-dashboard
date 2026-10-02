@@ -26,6 +26,8 @@ export interface WaTestResult {
   durationMs: number
 }
 export interface WaSettingsView {
+  /** True only for someone who may change the connection (and only while the CRM is released to them). */
+  canManage: boolean
   state: WaConnectionState
   enabled: boolean
   enabledSource: "dashboard" | "server"

@@ -12,12 +12,14 @@ interface Props {
   onTest: () => void
   onToggle: (on: boolean) => void
   toggling: boolean
+  /** Show the status only: no test button, no on/off switch. */
+  readOnly?: boolean
 }
 
 const ICON = { CONNECTED: CheckCircle2, SAVED: PlugZap, FAILED: XCircle, DISABLED: Plug, NOT_CONFIGURED: ShieldAlert } as const
 
 /** The first thing you see: is WhatsApp working, which number, and the one button that matters. */
-export function ConnectionHero({ view, testing, onTest, onToggle, toggling }: Props) {
+export function ConnectionHero({ view, testing, onTest, onToggle, toggling, readOnly = false }: Props) {
   const s = STATE_STYLE[view.state]
   const Icon = ICON[view.state]
   const sum = numberSummary(view)
@@ -37,11 +39,11 @@ export function ConnectionHero({ view, testing, onTest, onToggle, toggling }: Pr
               <span className={cn("h-2 w-2 rounded-full", s.dot, view.state === "CONNECTED" && "animate-pulse")} aria-hidden />
               {s.label}
             </p>
-            <h2 className="mt-1 text-2xl font-semibold leading-tight">{s.headline}</h2>
+            <h2 className="mt-1 text-2xl font-semibold leading-tight">{readOnly && view.state === "NOT_CONFIGURED" ? "WhatsApp is not connected" : s.headline}</h2>
             {sum.number ? (
               <p className="mt-1 text-sm text-white/90">{sum.name ? `${sum.name} · ` : ""}{sum.number}</p>
             ) : (
-              <p className="mt-1 text-sm text-white/80">{view.state === "NOT_CONFIGURED" ? "Enter the details below, then press “Save & test connection”." : view.lastTestedAt ? `Last tested ${formatWhen(view.lastTestedAt)}` : "Not tested yet."}</p>
+              <p className="mt-1 text-sm text-white/80">{view.state === "NOT_CONFIGURED" ? (readOnly ? "An administrator needs to set it up." : "Enter the details below, then press “Save & test connection”.") : view.lastTestedAt ? `Last tested ${formatWhen(view.lastTestedAt)}` : "Not tested yet."}</p>
             )}
             {sum.chips.length > 0 && (
               <ul className="mt-3 flex flex-wrap gap-2">
@@ -56,6 +58,7 @@ export function ConnectionHero({ view, testing, onTest, onToggle, toggling }: Pr
         </div>
 
         <div className="flex flex-col items-end gap-2">
+          {!readOnly && (<>
           <Button onClick={onTest} disabled={!canTest || testing} className="bg-white text-slate-900 shadow-sm hover:bg-white/90">
             {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <RefreshCw className="mr-2 h-4 w-4" aria-hidden />}
             {testing ? "Testing…" : "Test connection"}
@@ -65,6 +68,7 @@ export function ConnectionHero({ view, testing, onTest, onToggle, toggling }: Pr
               {view.state === "DISABLED" ? "Switch WhatsApp on" : "Switch WhatsApp off"}
             </button>
           )}
+          </>)}
           {view.lastTestedAt && <p className="text-[11px] text-white/70">Last test: {formatWhen(view.lastTestedAt)}</p>}
         </div>
       </div>
