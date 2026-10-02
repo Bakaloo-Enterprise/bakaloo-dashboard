@@ -15,6 +15,7 @@ import {
   ClipboardList,
   CalendarDays,
   Clock,
+  Code2,
   Coffee,
   CreditCard,
   FileSpreadsheet,
@@ -25,11 +26,16 @@ import {
   Landmark,
   LayoutDashboard,
   LayoutGrid,
+  Lock,
   LogOut,
   Map,
+  Megaphone,
+  MessageCircle,
+  MessagesSquare,
   MapPin,
   MapPinned,
   Package,
+  PackageCheck,
   Palette,
   Receipt,
   ScrollText,
@@ -42,6 +48,7 @@ import {
   Star,
   Store,
   Tags,
+  Truck,
   Ticket,
   Timer,
   TrendingUp,
@@ -49,6 +56,7 @@ import {
   Users,
   Users2,
   Wallet,
+  Workflow,
   Youtube,
   type LucideIcon,
 } from "lucide-react"
@@ -63,6 +71,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { usePendingActions } from "@/hooks/useDashboard"
+import { useChatUnread } from "@/hooks/useTeamChat"
+import { featureForPath, useFeatures } from "@/hooks/useFeatures"
 import { useMenuVisibility } from "@/hooks/useRBAC"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth.store"
@@ -82,12 +92,13 @@ type NavItem = {
   label: string
   href: string
   icon: string
-  badgeKey?: "pendingOrders" | "lowStockProducts" | "pendingRiderApprovals"
+  badgeKey?: "pendingOrders" | "lowStockProducts" | "pendingRiderApprovals" | "teamChatUnread"
   children?: NavChild[]
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Activity,
+  Code2,
   BarChart3,
   Bell,
   BellRing,
@@ -109,7 +120,11 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Map,
   MapPin,
   MapPinned,
+  Megaphone,
+  MessageCircle,
+  MessagesSquare,
   Package,
+  PackageCheck,
   Palette,
   Receipt,
   ScrollText,
@@ -121,6 +136,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Star,
   Store,
   Tags,
+  Truck,
   Ticket,
   Timer,
   TrendingUp,
@@ -128,6 +144,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Users,
   Users2,
   Wallet,
+  Workflow,
   Youtube,
 }
 
@@ -246,6 +263,37 @@ const NAV_SECTIONS: Array<{ section: string; items: NavItem[] }> = [
     ],
   },
   {
+    section: "BUSINESS",
+    items: [
+      { label: "Business Analytics", href: "/business-analytics", icon: "BarChart3" },
+      { label: "Procurement", href: "/procurement", icon: "Truck" },
+      { label: "Bulk Catalog", href: "/catalog-bulk", icon: "FileSpreadsheet" },
+    ],
+  },
+  {
+    section: "FULFILLMENT",
+    items: [
+      { label: "Fulfillment Board", href: "/pos", icon: "PackageCheck" },
+    ],
+  },
+  {
+    section: "WHATSAPP CRM",
+    items: [
+      { label: "Inbox", href: "/whatsapp-crm/inbox", icon: "MessageCircle" },
+      { label: "Team Chat", href: "/whatsapp-crm/chat", icon: "MessagesSquare", badgeKey: "teamChatUnread" },
+      { label: "Pipeline", href: "/whatsapp-crm/pipeline", icon: "TrendingUp" },
+      { label: "Templates", href: "/whatsapp-crm/templates", icon: "FileText" },
+      { label: "Campaigns", href: "/whatsapp-crm/campaigns", icon: "Megaphone" },
+      { label: "Prospects", href: "/whatsapp-crm/prospects", icon: "FileSpreadsheet" },
+      { label: "Workflows", href: "/whatsapp-crm/workflows", icon: "Workflow" },
+      { label: "Auto-reply Bot", href: "/whatsapp-crm/bot", icon: "Sparkles" },
+      { label: "Analytics", href: "/whatsapp-crm/analytics", icon: "BarChart3" },
+      { label: "Workload", href: "/whatsapp-crm/workload", icon: "Users2" },
+      { label: "Labels", href: "/whatsapp-crm/labels", icon: "Tags" },
+      { label: "WhatsApp Settings", href: "/whatsapp-crm/settings", icon: "Settings" },
+    ],
+  },
+  {
     section: "B2B",
     items: [
       { label: "Applications", href: "/b2b/applications", icon: "Briefcase" },
@@ -279,6 +327,12 @@ const NAV_SECTIONS: Array<{ section: string; items: NavItem[] }> = [
   },
 ]
 
+/** Only Developer Super Admins ever see this section. */
+const DEVELOPER_SECTION = {
+  section: "DEVELOPER",
+  items: [{ label: "Developer Access", href: "/developer", icon: "Code2" }],
+}
+
 function isPathActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
@@ -307,6 +361,10 @@ function NavSectionItem({
   onToggleGroup,
 }: NavItemProps) {
   const Icon = ICON_MAP[item.icon]
+  // Features still in development stay visible (so people know they're coming) but show a lock until released.
+  const features = useFeatures().data
+  const featureKey = featureForPath(item.href)
+  const locked = Boolean(featureKey && features && !features.features?.[featureKey]?.canAccess)
 
   if (item.children && !isCollapsed) {
     const groupId = item.id ?? item.href
@@ -403,6 +461,9 @@ function NavSectionItem({
         )}
       />
       {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
+      {!isCollapsed && locked && (
+        <Lock aria-label="In development" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      )}
       {!isCollapsed && badgeCount > 0 && (
         <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
           {badgeCount > 99 ? "99+" : badgeCount}
@@ -494,6 +555,10 @@ export function Sidebar() {
   const logout = useAuthStore((s) => s.logout)
   const { isCollapsed, setCollapsed } = useSidebarStore()
   const { data: pendingActions } = usePendingActions()
+  const features = useFeatures().data
+  const { data: chatUnread } = useChatUnread(features?.features?.team_chat?.canAccess === true)
+  const isDeveloper = features?.isDeveloper === true
+  const sections = isDeveloper ? [...NAV_SECTIONS, DEVELOPER_SECTION] : NAV_SECTIONS
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
     const initial = new Set<string>()
     if (pathname.startsWith("/settings")) initial.add("settings")
@@ -533,6 +598,7 @@ export function Sidebar() {
     pendingOrders: pendingActions?.pendingOrders ?? 0,
     lowStockProducts: pendingActions?.lowStockProducts ?? 0,
     pendingRiderApprovals: pendingActions?.pendingRiderApprovals ?? 0,
+    teamChatUnread: chatUnread?.unread ?? 0,
   }
 
   return (
@@ -576,7 +642,7 @@ export function Sidebar() {
 
         <ScrollArea className="flex-1 py-3">
           <nav aria-label="Main menu" role="menubar" className="space-y-5 px-3">
-            {NAV_SECTIONS.map((section) => (
+            {sections.map((section) => (
               <SidebarSection
                 key={section.section}
                 section={section.section}
@@ -611,7 +677,7 @@ export function Sidebar() {
                   {user?.name || "Admin"}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {user?.role_name || user?.email}
+                  {isDeveloper ? "Developer Super Admin" : user?.role_name || user?.email}
                 </p>
               </div>
             )}

@@ -44,6 +44,7 @@ import {
   creditCustomerWallet,
   debitCustomerWallet,
   notifyCustomer,
+  getCustomerNotifications,
   exportCustomersCsv,
 } from "@/services/customers.service"
 import { useShopContext } from "@/hooks/useShopContext"
@@ -197,7 +198,17 @@ export function useDebitWallet() {
   })
 }
 
+export function useCustomerNotifications(customerId: string | null, personal: boolean) {
+  return useQuery({
+    queryKey: ["customers", "notifications", customerId, personal],
+    queryFn: () => getCustomerNotifications(customerId as string, personal),
+    enabled: Boolean(customerId),
+    staleTime: 15_000,
+  })
+}
+
 export function useNotifyCustomer() {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
       id,
@@ -208,7 +219,10 @@ export function useNotifyCustomer() {
       title: string
       body: string
     }) => notifyCustomer(id, { title, body }),
-    onSuccess: () => toast.success("Notification sent"),
+    onSuccess: () => {
+      toast.success("Notification sent")
+      qc.invalidateQueries({ queryKey: ["customers", "notifications"] })
+    },
     onError: (e: Error) => toast.error(e.message || "Failed to send notification"),
   })
 }

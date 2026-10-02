@@ -36,6 +36,7 @@ import {
   Crown,
   Navigation,
   ArrowDownCircle,
+  MessageCircle,
 } from "lucide-react"
 import {
   useCustomerDetail,
@@ -47,6 +48,10 @@ import {
   useNotifyCustomer,
 } from "@/hooks/useCustomers"
 import { useShopContextStore } from "@/store/shop-context.store"
+import { useCrmMe } from "@/hooks/useWhatsappCrm"
+import { useFeatureAccess } from "@/hooks/useFeatures"
+import { CustomerMessages } from "./CustomerMessages"
+import { CustomerWhatsappDialog } from "./CustomerWhatsappDialog"
 import { formatINR, formatDate, formatRelativeTime } from "@/lib/utils"
 import { STATUS_CONFIG, type OrderStatus } from "@/lib/constants"
 import type { CustomerAddress } from "@/types"
@@ -67,6 +72,10 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
   const creditWallet = useCreditWallet()
   const debitWallet = useDebitWallet()
   const notifyCustomer = useNotifyCustomer()
+  // WhatsApp CRM is locked until released: no CRM calls and no WhatsApp controls for people who cannot use it yet.
+  const waFeature = useFeatureAccess("whatsapp_crm")
+  const crm = useCrmMe(waFeature.canAccess)
+  const [waDialog, setWaDialog] = useState(false)
 
   // Vendor scope enforcement (Req 10.10): a vendor (`assignedShopIds.length > 0`)
   // who opens a customer with no overlap between the customer's
@@ -246,6 +255,17 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
                       <Bell className="h-3.5 w-3.5 mr-1" />
                       Send Notification
                     </Button>
+                    {waFeature.canAccess && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-8 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => setWaDialog(true)}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                        WhatsApp Message
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant={customer.is_blocked ? "default" : "destructive"}
@@ -267,6 +287,10 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
                     </Button>
                   </div>
 
+                  <Separator />
+
+                  {/* Messages sent to this customer */}
+                  <CustomerMessages customerId={customer.id} canSeeWhatsapp={waFeature.canAccess && crm.can("crm.inbox.view")} />
                   <Separator />
 
                   {/* Addresses */}
@@ -500,6 +524,8 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {customer && waFeature.canAccess && <CustomerWhatsappDialog key={customer.id} customer={{ id: customer.id, name: customer.name, phone: customer.phone }} open={waDialog} onOpenChange={setWaDialog} />}
 
       {/* Notify Dialog */}
       <Dialog open={notifyDialog} onOpenChange={setNotifyDialog}>

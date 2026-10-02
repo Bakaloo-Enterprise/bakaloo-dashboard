@@ -102,3 +102,16 @@ export interface CustomerFilters {
    */
   shop_id?: string
 }
+
+/** A notification this customer received. `personal` = sent to them by hand from the dashboard. */
+export interface CustomerNotification {
+  id: string
+  title: string
+  body: string | null
+  type: string
+  personal: boolean
+  isRead: boolean
+  readAt: string | null
+  createdAt: string
+  sentByName: string | null
+}

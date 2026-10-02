@@ -184,6 +184,70 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       qc.invalidateQueries({ queryKey: ["abandoned-carts"] })
     })
 
+    // ── Store Fulfillment POS: anything changed in a store (content-free) → refetch the POS screens ──
+    s.on("pos:update", () => {
+      getQueryClient().invalidateQueries({ queryKey: ["pos"] })
+    })
+
+    // ── Internal team chat (sent only to the personal rooms of the chat's members) ──
+    s.on("chat:message", (e: { channelId?: string }) => {
+      const qc = getQueryClient()
+      qc.invalidateQueries({ queryKey: ["chat", "channels"] })
+      qc.invalidateQueries({ queryKey: ["chat", "unread"] })
+      if (e?.channelId) qc.invalidateQueries({ queryKey: ["chat", "messages", e.channelId] })
+    })
+    s.on("chat:message_deleted", (e: { channelId?: string }) => {
+      const qc = getQueryClient()
+      qc.invalidateQueries({ queryKey: ["chat", "channels"] })
+      qc.invalidateQueries({ queryKey: ["chat", "unread"] })
+      if (e?.channelId) qc.invalidateQueries({ queryKey: ["chat", "messages", e.channelId] })
+    })
+    s.on("chat:channel", () => {
+      const qc = getQueryClient()
+      qc.invalidateQueries({ queryKey: ["chat", "channels"] })
+      qc.invalidateQueries({ queryKey: ["chat", "channel"] })
+      qc.invalidateQueries({ queryKey: ["chat", "unread"] })
+    })
+    s.on("chat:read", () => {
+      const qc = getQueryClient()
+      qc.invalidateQueries({ queryKey: ["chat", "channels"] })
+      qc.invalidateQueries({ queryKey: ["chat", "unread"] })
+    })
+
+    // ── WhatsApp CRM realtime: new customer message / delivery status ──
+    // Invalidate rather than patch the cache: the list order, unread counts
+    // and the 24 h window all change, and the refetch is cheap.
+    s.on("crm:message", (e: { conversationId?: string }) => {
+      const qc = getQueryClient()
+      qc.invalidateQueries({ queryKey: ["crm", "conversations"] })
+      qc.invalidateQueries({ queryKey: ["crm", "pipeline"] })
+      if (e?.conversationId) {
+        qc.invalidateQueries({ queryKey: ["crm", "messages", e.conversationId] })
+        qc.invalidateQueries({ queryKey: ["crm", "conversation", e.conversationId] })
+      }
+    })
+    // Assignment / label changes (content-free event) — refresh lists, the open chat and workload.
+    s.on("crm:conversation", () => {
+      const qc = getQueryClient()
+      qc.invalidateQueries({ queryKey: ["crm", "conversations"] })
+      qc.invalidateQueries({ queryKey: ["crm", "conversation"] })
+      qc.invalidateQueries({ queryKey: ["crm", "workload"] })
+      qc.invalidateQueries({ queryKey: ["crm", "labels"] })
+      qc.invalidateQueries({ queryKey: ["crm", "pipeline"] })
+    })
+    // Automatic or manual stage change (content-free).
+    s.on("crm:pipeline", () => {
+      getQueryClient().invalidateQueries({ queryKey: ["crm", "pipeline"] })
+    })
+    // Template approval changed (webhook or sync): refresh the library and any open template.
+    s.on("crm:template", () => {
+      getQueryClient().invalidateQueries({ queryKey: ["crm", "templates"] })
+    })
+    s.on("crm:status", (e: { conversationId?: string }) => {
+      const qc = getQueryClient()
+      if (e?.conversationId) qc.invalidateQueries({ queryKey: ["crm", "messages", e.conversationId] })
+    })
+
     // Notification for any push
     s.on("notification", (n) => {
       useNotificationStore.getState().addNotification({

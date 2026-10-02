@@ -1,4 +1,5 @@
 import api from "@/lib/api"
+import type { CustomerNotification } from "@/types/customer.types"
 import type { ApiResponse, Customer, CustomerAddress, CustomerDetail, CustomerFilters } from "@/types"
 
 /** List customers with filters + pagination */
@@ -108,6 +109,12 @@ export async function notifyCustomer(
     `/admin/customers/${id}/notify`,
     payload
   )
+  return data.data
+}
+
+/** What this customer was sent: only the personal messages, or every notification. */
+export async function getCustomerNotifications(id: string, personal: boolean) {
+  const { data } = await api.get<ApiResponse<CustomerNotification[]>>(`/admin/customers/${id}/notifications`, { params: { personal, limit: 50 } })
   return data.data
 }
 
