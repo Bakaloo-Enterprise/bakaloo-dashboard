@@ -338,6 +338,9 @@ export interface TemplateInput {
   metaCategory: MetaCategory
   purpose: string
   headerText?: string
+  /** Image header: the sample uploaded to Meta (headerHandle) and its type */
+  headerFormat?: "IMAGE" | "VIDEO" | "DOCUMENT"
+  headerHandle?: string
   bodyText: string
   footerText?: string
   buttons?: TemplateButtonInput[]

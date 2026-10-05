@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { ImageUploadField } from "./ImageUploadField"
+import { uploadTemplateHeaderSample } from "@/services/whatsapp-crm.service"
 import { templateFormErrors, useTemplate, useTemplateMutations } from "@/hooks/useWhatsappCrm"
 import { cn, formatDateTime } from "@/lib/utils"
 import type { MetaCategory, TemplateButtonInput, TemplateFormError, TemplateInput, WaTemplate } from "@/types/whatsapp-crm.types"
@@ -32,6 +34,9 @@ export function TemplateEditorDialog({ open, templateId, purposes, connected, on
   const [form, setForm] = useState<TemplateInput>(EMPTY)
   const [errors, setErrors] = useState<TemplateFormError[]>([])
   const [nameTouched, setNameTouched] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [sampleBusy, setSampleBusy] = useState(false)
+  const [sampleError, setSampleError] = useState<string | null>(null)
 
   const tpl = detail.data?.template ?? null
   const editor = detail.data?.editor
@@ -42,6 +47,8 @@ export function TemplateEditorDialog({ open, templateId, purposes, connected, on
     if (!open) return
     setErrors([])
     setNameTouched(false)
+    setImageUrl(null)
+    setSampleError(null)
     if (!templateId) return setForm(EMPTY)
     if (tpl && editor?.input) {
       setForm({ ...EMPTY, name: tpl.name, language: tpl.language, metaCategory: tpl.meta_category, purpose: tpl.purpose, allowCategoryChange: tpl.allow_category_change, ...editor.input, buttons: editor.input.buttons ?? [], examples: editor.input.examples ?? {} } as TemplateInput)
@@ -57,6 +64,31 @@ export function TemplateEditorDialog({ open, templateId, purposes, connected, on
   const err = (field: string) => errors.filter((e) => e.field === field || e.field.startsWith(`${field}.`) || e.field.startsWith(`${field}[`))
   const buttons = form.buttons ?? []
   const setButton = (i: number, patch: Partial<TemplateButtonInput>) => set("buttons", buttons.map((b, n) => (n === i ? { ...b, ...patch } : b)))
+
+  const headerKind: "NONE" | "TEXT" | "IMAGE" = form.headerFormat === "IMAGE" ? "IMAGE" : form.headerText ? "TEXT" : "NONE"
+  const [headerMode, setHeaderMode] = useState<"NONE" | "TEXT" | "IMAGE" | null>(null)
+  const mode = headerMode ?? headerKind
+  const chooseHeader = (v: "NONE" | "TEXT" | "IMAGE") => {
+    setHeaderMode(v)
+    setSampleError(null)
+    if (v === "IMAGE") setForm((f) => ({ ...f, headerText: "" }))
+    else setForm((f) => ({ ...f, headerFormat: undefined, headerHandle: undefined, ...(v === "NONE" ? { headerText: "" } : {}) }))
+    if (v !== "IMAGE") setImageUrl(null)
+  }
+  const onImageUploaded = async (url: string) => {
+    setSampleBusy(true)
+    setSampleError(null)
+    try {
+      const r = await uploadTemplateHeaderSample(url, "IMAGE")
+      setImageUrl(url)
+      setForm((f) => ({ ...f, headerFormat: "IMAGE", headerHandle: r.handle, headerText: "" }))
+    } catch (e) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setSampleError(msg ?? "Could not send the image to Meta. Check the App ID in WhatsApp settings and try again.")
+    } finally {
+      setSampleBusy(false)
+    }
+  }
 
   const payload = (): TemplateInput => ({
     ...form,
@@ -170,10 +202,29 @@ export function TemplateEditorDialog({ open, templateId, purposes, connected, on
               </div>
 
               <div>
-                <Label htmlFor="tpl-header">Header (optional)</Label>
-                <Input id="tpl-header" value={form.headerText ?? ""} onChange={(e) => set("headerText", e.target.value)} maxLength={200} />
-                <p className={cn("mt-1 text-xs", (form.headerText?.length ?? 0) > LIMITS.header ? "text-red-600" : "text-muted-foreground")}>{form.headerText?.length ?? 0}/{LIMITS.header}</p>
+                <Label>Header (optional)</Label>
+                <div className="mt-1 flex gap-2" role="radiogroup" aria-label="Header type">
+                  {([["NONE", "None"], ["TEXT", "Text"], ["IMAGE", "Image / banner"]] as const).map(([k, label]) => (
+                    <Button key={k} type="button" size="sm" variant={mode === k ? "default" : "outline"} role="radio" aria-checked={mode === k} disabled={submitted && !isDraftOrNew} onClick={() => chooseHeader(k)}>{label}</Button>
+                  ))}
+                </div>
+                {mode === "TEXT" && (
+                  <>
+                    <Input id="tpl-header" className="mt-2" value={form.headerText ?? ""} onChange={(e) => set("headerText", e.target.value)} maxLength={200} aria-label="Header text" />
+                    <p className={cn("mt-1 text-xs", (form.headerText?.length ?? 0) > LIMITS.header ? "text-red-600" : "text-muted-foreground")}>{form.headerText?.length ?? 0}/{LIMITS.header}</p>
+                  </>
+                )}
+                {mode === "IMAGE" && (
+                  <div className="mt-2 space-y-2">
+                    <ImageUploadField label={form.headerHandle ? "Replace sample image" : "Upload sample image"} onUploaded={onImageUploaded} />
+                    <p className="text-xs text-muted-foreground">Meta reviews this sample. When you send the template you pick the real image (a product photo or offer banner) each time. JPEG or PNG, up to 5 MB, ideally 1.91:1 (for example 1200 × 628).</p>
+                    {sampleBusy && <p className="text-xs text-muted-foreground">Sending the sample to Meta…</p>}
+                    {form.headerHandle && !sampleBusy && <p className="text-xs text-emerald-700">Sample ready for Meta review.</p>}
+                    {sampleError && <p role="alert" className="text-xs text-red-600">{sampleError}</p>}
+                  </div>
+                )}
                 {err("headerText").map((e, i) => <p key={i} className="text-xs text-red-600">{e.message}</p>)}
+                {err("headerFormat").map((e, i) => <p key={i} className="text-xs text-red-600">{e.message}</p>)}
               </div>
 
               <div>
@@ -248,7 +299,10 @@ export function TemplateEditorDialog({ open, templateId, purposes, connected, on
           <aside className="space-y-3" aria-label="Preview">
             <h4 className="text-xs font-semibold uppercase text-muted-foreground">What the customer sees</h4>
             <div className="rounded-xl bg-[#e7f3ec] p-3 dark:bg-emerald-950/40">
-              <div className="whitespace-pre-wrap rounded-lg bg-white p-3 text-sm shadow-sm dark:bg-card" data-testid="template-preview">{preview || "Your message appears here"}</div>
+              <div className="whitespace-pre-wrap rounded-lg bg-white p-3 text-sm shadow-sm dark:bg-card" data-testid="template-preview">
+                {imageUrl && mode === "IMAGE" && /* eslint-disable-next-line @next/next/no-img-element */ <img src={imageUrl} alt="Header sample" className="mb-2 w-full rounded-md object-cover" />}
+                {preview || "Your message appears here"}
+              </div>
             </div>
             {tpl && detail.data && detail.data.events.length > 0 && (
               <div>

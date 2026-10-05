@@ -1,5 +1,6 @@
 "use client"
 
+import { ImageUploadField } from "./ImageUploadField"
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -129,6 +130,7 @@ export function CampaignDialog({ open, campaign, saving, onClose, onSave }: Prop
             <div>
               <Label htmlFor="c-media">Link to the {tpl?.header_format?.toLowerCase()} (https://)</Label>
               <Input id="c-media" value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} className="mt-1" />
+              <div className="mt-2"><ImageUploadField label="Upload product image / banner" onUploaded={setMediaUrl} /></div>
             </div>
           )}
 

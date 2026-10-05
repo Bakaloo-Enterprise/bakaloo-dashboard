@@ -51,6 +51,11 @@ import type {
 
 const BASE = "/admin/crm"
 
+export async function uploadTemplateHeaderSample(url: string, format: "IMAGE" | "VIDEO" | "DOCUMENT" = "IMAGE") {
+  const { data } = await api.post<ApiResponse<{ handle: string; format: string }>>(`${BASE}/templates/header-sample`, { url, format })
+  return data.data
+}
+
 export async function getCrmStatus() {
   const { data } = await api.get<ApiResponse<WaConfigStatus>>(`${BASE}/status`)
   return data.data

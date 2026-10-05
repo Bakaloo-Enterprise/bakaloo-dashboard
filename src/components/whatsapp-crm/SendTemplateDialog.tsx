@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { FileText, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ImageUploadField } from "./ImageUploadField"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -126,6 +127,8 @@ export function SendTemplateDialog({ conversationId, consent, windowOpen, canSen
                   <div>
                     <Label htmlFor="tv-media">{selected.header_format?.toLowerCase()} link (https://)</Label>
                     <Input id="tv-media" value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} placeholder="https://…" />
+                    {selected.header_format === "IMAGE" && <div className="mt-2"><ImageUploadField label="Upload product image / banner" onUploaded={setMediaUrl} /></div>}
+                    {selected.header_format === "IMAGE" && /^https:\/\//.test(mediaUrl) && /* eslint-disable-next-line @next/next/no-img-element */ <img src={mediaUrl} alt="Selected header" className="mt-2 max-h-40 rounded-md" />}
                   </div>
                 )}
 
