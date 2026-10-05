@@ -217,7 +217,7 @@ export function TemplateEditorDialog({ open, templateId, purposes, connected, on
                 {mode === "IMAGE" && (
                   <div className="mt-2 space-y-2">
                     <ImageUploadField label={form.headerHandle ? "Replace sample image" : "Upload sample image"} onUploaded={onImageUploaded} />
-                    <p className="text-xs text-muted-foreground">Meta reviews this sample. When you send the template you pick the real image (a product photo or offer banner) each time. JPEG or PNG, up to 5 MB, ideally 1.91:1 (for example 1200 × 628).</p>
+                    <p className="text-xs text-muted-foreground">This is only a sample so Meta can approve the template once. Later, when you send it, you choose the real picture: the customer’s cart product, a product on offer, or your own banner. Use JPEG or PNG, up to 5 MB, wide shape (like 1200 × 628).</p>
                     {sampleBusy && <p className="text-xs text-muted-foreground">Sending the sample to Meta…</p>}
                     {form.headerHandle && !sampleBusy && <p className="text-xs text-emerald-700">Sample ready for Meta review.</p>}
                     {sampleError && <p role="alert" className="text-xs text-red-600">{sampleError}</p>}

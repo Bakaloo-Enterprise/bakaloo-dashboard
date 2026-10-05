@@ -1,13 +1,13 @@
 "use client"
 
-import { ImageUploadField } from "./ImageUploadField"
+import { PictureSourcePicker, pictureOk } from "./PictureSourcePicker"
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCampaignOptions, useLabels, useTemplates } from "@/hooks/useWhatsappCrm"
-import type { AudienceType, Campaign, CampaignInput } from "@/types/whatsapp-crm.types"
+import type { AudienceType, Campaign, CampaignInput, PictureSource } from "@/types/whatsapp-crm.types"
 import { renderTemplateText, sendVariables } from "./template-helpers"
 
 interface Props {
@@ -40,7 +40,7 @@ export function CampaignDialog({ open, campaign, saving, onClose, onSave }: Prop
   const [ids, setIds] = useState<string[]>([])
   const [values, setValues] = useState<Record<string, string>>({})
   const [rate, setRate] = useState(60)
-  const [mediaUrl, setMediaUrl] = useState("")
+  const [picture, setPicture] = useState<PictureSource | null>(null)
 
   const templates = useTemplates({ status: "APPROVED" }, open)
   const options = useCampaignOptions(open)
@@ -54,7 +54,7 @@ export function CampaignDialog({ open, campaign, saving, onClose, onSave }: Prop
     setIds(campaign?.audience.ids ?? [])
     setValues(campaign?.template_values ?? {})
     setRate(campaign?.rate_per_minute ?? 60)
-    setMediaUrl(campaign?.header_media_url ?? "")
+    setPicture(campaign?.header_image_source ?? (campaign?.header_media_url ? { mode: "ONE", urls: [campaign.header_media_url] } : null))
   }, [open, campaign])
 
   const approved = templates.data?.templates ?? []
@@ -73,7 +73,7 @@ export function CampaignDialog({ open, campaign, saving, onClose, onSave }: Prop
   const toggle = (id: string) => setIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 20 ? cur : [...cur, id]))
   const missingValue = vars.some((v) => !values[v.key ?? v.name]?.trim())
   const audienceOk = type === "ALL_OPTED_IN" || ids.length > 0
-  const valid = name.trim() && templateId && audienceOk && !missingValue && (!needsMedia || /^https:\/\/\S+$/.test(mediaUrl.trim()))
+  const valid = name.trim() && templateId && audienceOk && !missingValue && (!needsMedia || pictureOk(picture))
 
   const submit = () => {
     const typed: Record<string, string> = {}
@@ -84,7 +84,7 @@ export function CampaignDialog({ open, campaign, saving, onClose, onSave }: Prop
       audience: { type, ids: type === "ALL_OPTED_IN" ? [] : ids },
       templateValues: typed,
       ratePerMinute: rate,
-      ...(needsMedia ? { headerMediaUrl: mediaUrl.trim() } : {}),
+      ...(needsMedia ? { headerImageSource: picture } : {}),
     })
   }
 
@@ -126,13 +126,7 @@ export function CampaignDialog({ open, campaign, saving, onClose, onSave }: Prop
             </div>
           )}
 
-          {needsMedia && (
-            <div>
-              <Label htmlFor="c-media">Link to the {tpl?.header_format?.toLowerCase()} (https://)</Label>
-              <Input id="c-media" value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} className="mt-1" />
-              <div className="mt-2"><ImageUploadField label="Upload product image / banner" onUploaded={setMediaUrl} /></div>
-            </div>
-          )}
+          {needsMedia && <PictureSourcePicker value={picture} onChange={setPicture} />}
 
           <fieldset>
             <legend className="text-sm font-medium">Who receives it</legend>

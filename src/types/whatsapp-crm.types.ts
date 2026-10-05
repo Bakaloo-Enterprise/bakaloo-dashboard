@@ -416,6 +416,7 @@ export interface Campaign {
   template_category: MetaCategory
   template_values: Record<string, string>
   header_media_url: string | null
+  header_image_source?: PictureSource | null
   audience: CampaignAudience
   status: CampaignStatus
   pause_reason: string | null
@@ -433,6 +434,7 @@ export interface CampaignInput {
   audience: CampaignAudience
   templateValues?: Record<string, string>
   headerMediaUrl?: string
+  headerImageSource?: PictureSource | null
   ratePerMinute?: number
 }
 export interface AudiencePreview {
@@ -476,8 +478,15 @@ export interface WorkflowCondition {
   op: ConditionOp
   value: string | number
 }
+/** Where the picture of an image-header template comes from, chosen again for every message */
+export type PictureSource =
+  | { mode: "ONE" | "IMAGES"; urls: string[]; fallbackUrl?: string }
+  | { mode: "PRODUCTS"; productIds: string[]; fallbackUrl?: string }
+  | { mode: "OFFER_PRODUCTS"; fallbackUrl?: string }
+  | { mode: "CART_PRODUCT"; pick: "TOP" | "RANDOM"; fallbackUrl?: string }
+
 export type WorkflowAction =
-  | { type: "SEND_TEMPLATE"; templateId: string; values: Record<string, string>; couponId?: string }
+  | { type: "SEND_TEMPLATE"; templateId: string; values: Record<string, string>; couponId?: string; imageSource?: PictureSource }
   | { type: "ADD_LABEL"; labelId: string }
 export interface Workflow {
   id: string

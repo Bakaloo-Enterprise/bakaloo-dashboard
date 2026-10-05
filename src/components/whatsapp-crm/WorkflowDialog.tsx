@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCoupons } from "@/hooks/useCoupons"
 import { useLabels, useTemplates, useWorkflowCatalog } from "@/hooks/useWhatsappCrm"
-import type { ConditionOp, Workflow, WorkflowAction, WorkflowInput, WorkflowTrigger } from "@/types/whatsapp-crm.types"
+import { PictureSourcePicker, pictureOk } from "./PictureSourcePicker"
+import type { ConditionOp, PictureSource, Workflow, WorkflowAction, WorkflowInput, WorkflowTrigger } from "@/types/whatsapp-crm.types"
 import { cleanConditions, FIELD_LABEL, OP_LABEL, ORDER_STATUS_OPTIONS, TEXT_FIELDS, tokenHint, TRIGGER_LABEL } from "./campaign-helpers"
 import { sendVariables } from "./template-helpers"
 
@@ -34,6 +35,7 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
   const [status, setStatus] = useState("PACKED")
   const [rows, setRows] = useState<Row[]>([])
   const [templateId, setTemplateId] = useState("")
+  const [picture, setPicture] = useState<PictureSource | null>(null)
   const [values, setValues] = useState<Record<string, string>>({})
   const [couponId, setCouponId] = useState("")
   const [labelId, setLabelId] = useState("")
@@ -53,6 +55,7 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
     setStatus(workflow?.trigger_config.status ?? "PACKED")
     setRows((workflow?.conditions ?? []).map((c) => ({ field: c.field, op: c.op, value: String(c.value) })))
     setTemplateId(send?.templateId ?? "")
+    setPicture(send?.imageSource ?? null)
     setValues(send?.values ?? {})
     setCouponId(send?.couponId ?? "")
     setLabelId(label?.labelId ?? "")
@@ -60,6 +63,7 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
 
   const info = catalog.data?.triggers[trigger]
   const tpl = (templates.data?.templates ?? []).find((t) => t.id === templateId)
+  const needsPicture = Boolean(tpl && tpl.header_format === "IMAGE")
   const tokens = info?.tokens ?? []
   const publicCoupons = (coupons.data?.data ?? []).filter((c) => c.isActive && c.targetType === "ALL")
   const usesCoupon = trigger === "CART_ABANDONED" && Boolean(couponId)
@@ -69,12 +73,12 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
   const needTyped = tpl ? sendVariables(tpl).filter((v) => !autoFilled.includes(String(v.key ?? v.name))) : []
   const missing = needTyped.some((v) => !values[String(v.key ?? v.name)]?.trim())
   const editing = Boolean(workflow)
-  const valid = name.trim() && templateId && !missing && (trigger !== "ORDER_STATUS" || status) && rows.every((r) => !r.field || r.value.trim() !== "")
+  const valid = name.trim() && templateId && !missing && (!needsPicture || pictureOk(picture)) && (trigger !== "ORDER_STATUS" || status) && rows.every((r) => !r.field || r.value.trim() !== "")
 
   const submit = () => {
     const spec: Record<string, string> = {}
     for (const v of needTyped) spec[String(v.key ?? v.name)] = values[String(v.key ?? v.name)] ?? ""
-    const actions: WorkflowAction[] = [{ type: "SEND_TEMPLATE", templateId, values: spec, ...(usesCoupon ? { couponId } : {}) }]
+    const actions: WorkflowAction[] = [{ type: "SEND_TEMPLATE", templateId, values: spec, ...(usesCoupon ? { couponId } : {}), ...(needsPicture && picture ? { imageSource: picture } : {}) }]
     if (labelId) actions.push({ type: "ADD_LABEL", labelId })
     onSave({
       name: name.trim(),
@@ -168,6 +172,8 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
                 <p className="mt-1 text-[11px] text-muted-foreground">Only coupons anyone can use are listed. If the coupon stops working, no message is sent.</p>
               </div>
             )}
+
+            {needsPicture && <div className="mt-3"><PictureSourcePicker value={picture} onChange={setPicture} allowCart={trigger === "CART_ABANDONED"} /></div>}
 
             {needTyped.map((v) => (
               <div key={String(v.key ?? v.name)} className="mt-3">
