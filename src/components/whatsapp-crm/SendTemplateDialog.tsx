@@ -34,7 +34,7 @@ export function SendTemplateDialog({ conversationId, consent, windowOpen, canSen
   const known = useTemplateValues(conversationId, open)
   const send = useSendTemplate(conversationId)
 
-  const templates = list.data?.templates ?? []
+  const templates = (list.data?.templates ?? []).filter((t) => t.name !== "hello_world") // Meta sample: only sendable from Meta test numbers
   const selected = templates.find((t) => t.id === selectedId) ?? null
   const vars = useMemo(() => (selected ? sendVariables(selected) : []), [selected])
 
