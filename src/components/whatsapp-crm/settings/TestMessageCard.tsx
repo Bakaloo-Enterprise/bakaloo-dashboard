@@ -5,7 +5,7 @@ import { Loader2, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-/** Optional: really send Meta’s sample “hello_world” message to a phone, to see it arrive. */
+/** Optional: send a short test text to a phone, to see it arrive. */
 export function TestMessageCard({ disabled, busy, onSend }: { disabled: boolean; busy: boolean; onSend: (phone: string) => void }) {
   const [phone, setPhone] = useState("")
   const digits = phone.replace(/\D/g, "")
@@ -16,7 +16,7 @@ export function TestMessageCard({ disabled, busy, onSend }: { disabled: boolean;
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><Send className="h-5 w-5" aria-hidden /></span>
         <div>
           <h2 className="text-base font-semibold">Send a test message</h2>
-          <p className="text-sm text-muted-foreground">Sends Meta’s sample “hello_world” message so you can see it arrive on a real phone.</p>
+          <p className="text-sm text-muted-foreground">Sends a short test text. The phone must have messaged your business number in the last 24 hours.</p>
         </div>
       </header>
       <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); if (valid && !disabled) onSend(digits) }}>
