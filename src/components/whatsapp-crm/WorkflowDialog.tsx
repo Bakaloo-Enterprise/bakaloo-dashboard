@@ -43,7 +43,7 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
   const catalog = useWorkflowCatalog(open)
   const templates = useTemplates({ status: "APPROVED" }, open)
   const labels = useLabels()
-  const coupons = useCoupons({ limit: 100, isActive: true }, { shopScoped: false })
+  const coupons = useCoupons({ limit: 50, isActive: true }, { shopScoped: false, fetchAll: true })
 
   useEffect(() => {
     if (!open) return

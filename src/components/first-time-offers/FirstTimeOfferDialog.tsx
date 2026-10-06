@@ -80,7 +80,7 @@ export function FirstTimeOfferDialog({ open, onClose, offer }: FirstTimeOfferDia
   // First-time offers are platform-wide, not a shop feature — fetch
   // regardless of the admin's current shop selection (see useCoupons.ts's
   // doc comment).
-  const { data: couponsData } = useCoupons({ limit: 50 }, { shopScoped: false })
+  const { data: couponsData } = useCoupons({ limit: 50 }, { shopScoped: false, fetchAll: true })
 
   useEffect(() => {
     if (offer) {

@@ -34,6 +34,19 @@ export async function getCoupons(
   }
 }
 
+/** Walks every page (backend caps limit at 50) so pickers never miss older coupons. */
+export async function getAllCoupons(
+  filters: CouponFilters = {}
+): Promise<{ data: Coupon[]; pagination: PaginatedResponse<Coupon>["pagination"] }> {
+  const limit = 50
+  const first = await getCoupons({ ...filters, page: 1, limit })
+  const all = [...first.data]
+  for (let page = 2; page <= first.pagination.totalPages && page <= 50; page++) {
+    all.push(...(await getCoupons({ ...filters, page, limit })).data)
+  }
+  return { data: all, pagination: { ...first.pagination, page: 1, limit: all.length, totalPages: 1 } }
+}
+
 export async function createCoupon(payload: CreateCouponPayload): Promise<Coupon> {
   const { data } = await api.post<ApiResponse<Coupon>>("/coupons", payload)
   return data.data

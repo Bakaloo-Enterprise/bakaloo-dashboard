@@ -38,6 +38,7 @@ import { toast } from "sonner"
 
 import {
   getCoupons,
+  getAllCoupons,
   createCoupon,
   updateCoupon,
   deleteCoupon,
@@ -64,8 +65,8 @@ function getErrorMessage(error: unknown): string {
   return "Something went wrong"
 }
 
-export function useCoupons(filters: CouponFilters = {}, options: { shopScoped?: boolean } = {}) {
-  const { shopScoped = true } = options
+export function useCoupons(filters: CouponFilters = {}, options: { shopScoped?: boolean; fetchAll?: boolean } = {}) {
+  const { shopScoped = true, fetchAll = false } = options
   const { mode, activeShopId } = useShopContext()
   const shopKey =
     mode === "HQ_MODE" ? "ALL" : activeShopId ?? NONE_SHOP_KEY
@@ -74,8 +75,8 @@ export function useCoupons(filters: CouponFilters = {}, options: { shopScoped?: 
     // Unscoped callers share one "ALL" cache line — same key HQ_MODE
     // already uses, which is correct here since the underlying data isn't
     // actually shop-filtered either way.
-    queryKey: qk.coupons(shopScoped ? shopKey : "ALL", filters),
-    queryFn: () => getCoupons(filters),
+    queryKey: qk.coupons(shopScoped ? shopKey : "ALL", fetchAll ? { ...filters, limit: 0 } : filters),
+    queryFn: () => (fetchAll ? getAllCoupons(filters) : getCoupons(filters)),
     enabled: shopScoped ? shopKey !== NONE_SHOP_KEY : true,
     staleTime: 30_000,
     placeholderData: (prev) => prev,
