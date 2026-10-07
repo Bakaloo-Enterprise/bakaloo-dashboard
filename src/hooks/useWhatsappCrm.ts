@@ -75,6 +75,7 @@ import {
   getMessages,
   markConversationRead,
   sendMessage,
+  sendMedia,
 } from "@/services/whatsapp-crm.service"
 import { qk } from "@/lib/query-keys"
 import type { AnalyticsQuery, BreakdownBy, RateCategory, ProspectRowStatus, CampaignInput, CampaignStatus, WorkflowInput, TemplateFilters, TemplateFormError, TemplateInput, BotRuleInput, BotSettingsInput, ConversationFilters, CrmPermission, LabelInput, PipelineBoard, PipelineFilters } from "@/types/whatsapp-crm.types"
@@ -94,7 +95,11 @@ export function useConversations(filters: ConversationFilters = {}) {
   return useQuery({
     queryKey: qk.crmConversations(filters),
     queryFn: () => getConversations(filters),
-    staleTime: 15_000,
+    staleTime: 10_000,
+    // Safety net: the socket normally pushes new chats instantly, but if it is down (or the user's role is not
+    // in the broadcast room) the list still catches up on its own.
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
     placeholderData: (prev) => prev,
   })
 }
@@ -114,6 +119,7 @@ export function useMessages(id: string | null) {
     queryFn: () => getMessages(id as string),
     enabled: Boolean(id),
     staleTime: 10_000,
+    refetchInterval: 15_000,
   })
 }
 
@@ -121,6 +127,19 @@ export function useSendMessage(conversationId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: string) => sendMessage(conversationId, body),
+    onError: (err) => toast.error(errorMessage(err)),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.crmMessages(conversationId) })
+      qc.invalidateQueries({ queryKey: ["crm", "conversations"] })
+      qc.invalidateQueries({ queryKey: qk.crmConversation(conversationId) })
+    },
+  })
+}
+
+export function useSendMedia(conversationId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, caption }: { file: File; caption?: string }) => sendMedia(conversationId, file, caption),
     onError: (err) => toast.error(errorMessage(err)),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.crmMessages(conversationId) })

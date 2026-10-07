@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { MessageCircle } from "lucide-react"
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { ConversationList } from "@/components/whatsapp-crm/ConversationList"
@@ -22,6 +23,7 @@ import {
   useLabels,
   useMarkRead,
   useMessages,
+  useSendMedia,
   useSendMessage,
 } from "@/hooks/useWhatsappCrm"
 import type { ConversationStatus } from "@/types/whatsapp-crm.types"
@@ -33,6 +35,12 @@ export default function WhatsappInboxPage() {
   const [owner, setOwner] = useState("")
   const [labelId, setLabelId] = useState("")
   const [checked, setChecked] = useState<Set<string>>(new Set())
+  const [profileOpen, setProfileOpen] = useState(false)
+  const shell = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState<number | null>(null)
+  // Layout follows the inbox's own width (the sidebar eats a variable amount of the screen):
+  // wide = list | chat | details, split = list | chat (+ details drawer), single = one pane at a time.
+  const [mode, setMode] = useState<"wide" | "split" | "single">("wide")
   const debouncedSearch = useDebounce(search, 300)
 
   const me = useCrmMe()
@@ -53,6 +61,7 @@ export default function WhatsappInboxPage() {
   const detail = useConversation(selectedId)
   const messages = useMessages(selectedId)
   const send = useSendMessage(selectedId ?? "")
+  const sendFile = useSendMedia(selectedId ?? "")
   const markRead = useMarkRead()
 
   const conversations = useMemo(() => list.data ?? [], [list.data])
@@ -68,8 +77,38 @@ export default function WhatsappInboxPage() {
 
   const notConfigured = crm.data && !crm.data.enabled
 
+  // The inbox fills exactly the space under the page title — each column scrolls inside it, never the whole page.
+  useLayoutEffect(() => {
+    const fit = () => {
+      const el = shell.current
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY
+      setHeight(Math.max(440, Math.floor(window.innerHeight - top - 28)))
+      const w = el.getBoundingClientRect().width
+      setMode(w >= 1100 ? "wide" : w >= 700 ? "split" : "single")
+    }
+    fit()
+    const raf = requestAnimationFrame(fit)
+    window.addEventListener("resize", fit)
+    const ro = typeof ResizeObserver !== "undefined" && shell.current ? new ResizeObserver(fit) : null
+    if (ro && shell.current) ro.observe(shell.current)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener("resize", fit)
+      ro?.disconnect()
+    }
+  }, [notConfigured, crm.isSuccess])
+
+  const panel = detail.data ? (
+    <CustomerPanel
+      conversation={detail.data}
+      canApplyLabels={me.can("crm.labels.apply")}
+      footer={me.can("crm.campaigns.manage") ? <DoNotContactButton contactId={detail.data.contact_id} /> : undefined}
+    />
+  ) : null
+
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[420px] flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <PageHeader title="WhatsApp Inbox" subtitle="One shared inbox for customer WhatsApp conversations" />
 
       {notConfigured && (
@@ -79,8 +118,15 @@ export default function WhatsappInboxPage() {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-lg border bg-card md:grid-cols-[320px_1fr] xl:grid-cols-[320px_1fr_300px]">
-        <div className={selectedId ? "hidden md:block" : "block"}>
+      <div
+        ref={shell}
+        style={{
+          ...(height ? { height } : {}),
+          gridTemplateColumns: mode === "wide" ? "340px minmax(0,1fr) 320px" : mode === "split" ? "320px minmax(0,1fr)" : "minmax(0,1fr)",
+        }}
+        className="grid min-h-[440px] grid-rows-[minmax(0,1fr)] overflow-hidden rounded-xl border bg-card shadow-sm"
+      >
+        <div className={`min-h-0 min-w-0 border-r ${mode === "single" && selectedId ? "hidden" : "block"}`}>
           <ConversationList
             conversations={conversations}
             isLoading={list.isLoading}
@@ -112,30 +158,27 @@ export default function WhatsappInboxPage() {
           />
         </div>
 
-        <div className={selectedId ? "block min-h-0" : "hidden md:block"}>
+        <div className={`min-h-0 min-w-0 ${mode === "single" && !selectedId ? "hidden" : "block"}`}>
           {active ? (
-            <div className="flex h-full flex-col">
-              <button className="border-b px-4 py-2 text-left text-xs text-muted-foreground md:hidden" onClick={() => setSelectedId(null)}>
-                ← All conversations
-              </button>
-              <div className="min-h-0 flex-1">
-                <MessageThread
-                  conversation={active}
-                  messages={messages.data ?? []}
-                  isLoading={messages.isLoading}
-                  sending={send.isPending}
-                  canSend={canReply}
-                  composerExtra={<SendTemplateDialog conversationId={active.id} consent={active.marketing_consent} windowOpen={active.window_open} canSend={canReply && me.can("crm.templates.send")} />}
-                  onSend={(body) => send.mutateAsync(body)}
-                  headerExtra={
-                    <>
-                      <BotStateControl conversation={active} botEnabled={Boolean(crm.data?.botEnabled)} canControl={canReply} />
-                      <AssignControl conversation={active} meId={me.data?.userId} canAssign={canAssign} canReply={canReply} />
-                    </>
-                  }
-                />
-              </div>
-            </div>
+            <MessageThread
+              conversation={active}
+              messages={messages.data ?? []}
+              isLoading={messages.isLoading}
+              sending={send.isPending}
+              sendingFile={sendFile.isPending}
+              canSend={canReply}
+              onBack={mode === "single" ? () => setSelectedId(null) : undefined}
+              onOpenProfile={mode !== "wide" ? () => setProfileOpen(true) : undefined}
+              composerExtra={<SendTemplateDialog conversationId={active.id} consent={active.marketing_consent} windowOpen={active.window_open} canSend={canReply && me.can("crm.templates.send")} />}
+              onSend={(body) => send.mutateAsync(body)}
+              onSendFile={(file, caption) => sendFile.mutateAsync({ file, caption })}
+              headerExtra={
+                <>
+                  <BotStateControl conversation={active} botEnabled={Boolean(crm.data?.botEnabled)} canControl={canReply} />
+                  <AssignControl conversation={active} meId={me.data?.userId} canAssign={canAssign} canReply={canReply} />
+                </>
+              }
+            />
           ) : (
             <EmptyState
               icon={<MessageCircle className="h-6 w-6 text-muted-foreground" />}
@@ -146,8 +189,17 @@ export default function WhatsappInboxPage() {
           )}
         </div>
 
-        <div className="hidden min-h-0 xl:block">{detail.data && <CustomerPanel conversation={detail.data} canApplyLabels={me.can("crm.labels.apply")} footer={me.can("crm.campaigns.manage") ? <DoNotContactButton contactId={detail.data.contact_id} /> : undefined} />}</div>
+        {mode === "wide" && <div className="min-h-0 min-w-0 border-l">{panel}</div>}
       </div>
+
+      {/* Below the wide layout the customer details open as a drawer instead of a column. */}
+      <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
+        <SheetContent side="right" className="w-[min(92vw,360px)] p-0 sm:max-w-[360px]">
+          <SheetTitle className="sr-only">Customer details</SheetTitle>
+          <SheetDescription className="sr-only">Labels, consent and ownership for this conversation</SheetDescription>
+          {panel}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

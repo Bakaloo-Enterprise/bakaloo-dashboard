@@ -116,11 +116,29 @@ export async function getConversation(id: string) {
   return data.data
 }
 
-export async function getMessages(id: string) {
+export async function getMessages(id: string, before?: string) {
   const { data } = await api.get<ApiResponse<WaMessage[]>>(`${BASE}/conversations/${id}/messages`, {
-    params: { limit: 100 },
+    params: { limit: 100, ...(before ? { before } : {}) },
   })
   return Array.isArray(data.data) ? data.data : []
+}
+
+/** Sends a photo / video / voice note / document (multipart). The caption is optional. */
+export async function sendMedia(id: string, file: File, caption?: string) {
+  const form = new FormData()
+  if (caption?.trim()) form.append("caption", caption.trim())
+  form.append("file", file, file.name)
+  const { data } = await api.post<ApiResponse<WaMessage>>(`${BASE}/conversations/${id}/media`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 120_000,
+  })
+  return data.data
+}
+
+/** Downloads an attachment through our API (Meta's token never reaches the browser). */
+export async function fetchMessageMedia(conversationId: string, messageId: string): Promise<Blob> {
+  const { data } = await api.get<Blob>(`${BASE}/conversations/${conversationId}/messages/${messageId}/media`, { responseType: "blob" })
+  return data
 }
 
 export async function sendMessage(id: string, body: string) {

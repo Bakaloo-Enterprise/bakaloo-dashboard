@@ -5,16 +5,21 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
 import { cn } from "@/lib/utils"
 
-const ScrollArea = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
+interface ScrollAreaProps extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
+  /** Gives callers the scrolling element itself (e.g. to jump to the newest chat message). */
+  viewportRef?: React.Ref<HTMLDivElement>
+  viewportClassName?: string
+}
+
+const ScrollArea = React.forwardRef<React.ElementRef<typeof ScrollAreaPrimitive.Root>, ScrollAreaProps>(
+  ({ className, children, viewportRef, viewportClassName, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
     {...props}
   >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+    {/* Radix wraps content in a display:table div that ignores the parent's width; force a normal block so text truncates. */}
+    <ScrollAreaPrimitive.Viewport ref={viewportRef} className={cn("h-full w-full rounded-[inherit] [&>div]:!block", viewportClassName)}>
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />

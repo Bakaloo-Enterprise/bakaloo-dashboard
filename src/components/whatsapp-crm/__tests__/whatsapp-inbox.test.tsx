@@ -48,12 +48,14 @@ describe("helpers", () => {
     expect(conversationTitle(conv({ customer_name: "Rahul (customer)" }))).toBe("Rahul (customer)")
     expect(conversationTitle(conv())).toBe("Rahul Das")
     expect(conversationTitle(conv({ profile_name: null }))).toBe("9876543210")
-    expect(conversationTitle(conv({ profile_name: null, phone: null, wa_username: "priya_s" }))).toBe("@priya_s")
-    expect(conversationTitle(conv({ profile_name: null, phone: null, bsuid: "IN.123456" }))).toBe("IN.123456")
+    expect(conversationTitle(conv({ profile_name: null, phone: null, wa_id: null, wa_username: "priya_s" }))).toBe("@priya_s")
+    expect(conversationTitle(conv({ profile_name: null, phone: null, wa_id: null, bsuid: "IN.123456" }))).toBe("IN.123456")
   })
   it("handle shows +91 phone, falling back when Meta hid the number", () => {
     expect(conversationHandle(conv())).toBe("+91 9876543210")
-    expect(conversationHandle(conv({ phone: null, wa_username: "priya_s" }))).toBe("@priya_s")
+    expect(conversationHandle(conv({ phone: null, wa_id: null, wa_username: "priya_s" }))).toBe("@priya_s")
+    // a number that is not Indian (so no 10-digit phone) is still shown, never "Unknown"
+    expect(conversationTitle(conv({ profile_name: null, phone: null, wa_id: "14155550123" }))).toBe("+14155550123")
   })
   it("window hours left is 0 when closed or unknown", () => {
     const now = Date.parse("2026-10-02T00:00:00Z")
