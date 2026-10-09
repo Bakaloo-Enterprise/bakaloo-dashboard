@@ -69,7 +69,7 @@ export function SendTemplateDialog({ conversationId, consent, windowOpen, canSen
   const choose = (t: WaTemplate) => {
     setSelectedId(t.id)
     setValues({})
-    setMediaUrl("")
+    setMediaUrl(t.default_header_url ?? "")
   }
 
   return (

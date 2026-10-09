@@ -362,6 +362,7 @@ export interface WaTemplate {
   components: Array<Record<string, unknown>>
   body_text: string
   header_format: string | null
+  default_header_url?: string | null
   variables: TemplateVariable[]
   allow_category_change: boolean
   meta_template_id: string | null
