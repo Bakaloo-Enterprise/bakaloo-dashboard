@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { LineRow } from "@/components/pos/LineRow"
 import { ScanBox } from "@/components/pos/ScanBox"
-import { PeoplePicker, PrintPanel, RiderPanel, TimelinePanel } from "@/components/pos/OrderSidePanels"
+import { BillPanel, PeoplePicker, PrintPanel, RiderPanel, TimelinePanel } from "@/components/pos/OrderSidePanels"
 import { BLOCKER_TEXT, orderStatusLabel, progressFor } from "@/components/pos/pos-helpers"
 import { posErrorMessage, usePosMe, usePosMutations, usePosOrder } from "@/hooks/usePos"
 import type { Stage } from "@/types/pos.types"
@@ -93,6 +93,7 @@ export default function PosOrderPage() {
         <aside className="space-y-3">
           <PeoplePicker order={o} />
           <RiderPanel order={o} />
+          <BillPanel order={o} />
           <PrintPanel order={o} />
           <TimelinePanel orderId={o.id} />
         </aside>

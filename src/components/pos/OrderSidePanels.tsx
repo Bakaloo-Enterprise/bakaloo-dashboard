@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Printer, RotateCw } from "lucide-react"
+import { Printer, Receipt, RotateCw } from "lucide-react"
+import { BillSummary } from "@/components/orders/BillSummary"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RIDER_STATE } from "./pos-helpers"
@@ -74,6 +75,16 @@ export function RiderPanel({ order }: { order: OrderDetail }) {
 
 const JOB_CLS: Record<PrintJob["status"], string> = {
   QUEUED: "bg-slate-100 text-slate-700", PRINTING: "bg-sky-100 text-sky-800", PRINTED: "bg-emerald-100 text-emerald-800", FAILED: "bg-red-100 text-red-800", CANCELLED: "bg-slate-100 text-slate-500",
+}
+
+export function BillPanel({ order }: { order: OrderDetail }) {
+  if (!order.bill) return null
+  return (
+    <section className="space-y-2 rounded-md border p-3">
+      <h3 className="flex items-center gap-2 text-sm font-semibold"><Receipt className="h-4 w-4" aria-hidden />Bill &amp; payment</h3>
+      <BillSummary bill={order.bill} />
+    </section>
+  )
 }
 
 export function PrintPanel({ order }: { order: OrderDetail }) {

@@ -265,7 +265,47 @@ export interface AssignmentLogEntry {
   decided_at: string
 }
 
+/** One row of the itemised bill (backend: src/utils/orderBill.js). `amount` is signed — discounts are negative. */
+export interface BillLine {
+  code: string
+  kind: "items" | "discount" | "charge" | "tax" | "tip" | "adjustment"
+  label: string
+  amount: number
+  waived?: boolean
+  originalAmount?: number
+  note?: string | null
+}
+
+export interface BillPaymentPart {
+  code: string
+  label: string
+  amount: number
+  state: "PAID" | "DUE" | "PENDING" | "FAILED"
+  reference?: string | null
+}
+
+export interface OrderBill {
+  itemCount: number
+  lines: BillLine[]
+  grandTotal: number
+  reconciled: boolean
+  savings: { total: number; parts: { label: string; amount: number }[] }
+  payment: {
+    method: string
+    methodLabel: string
+    status: string
+    parts: BillPaymentPart[]
+    walletUsed: number
+    gatewayAmount: number
+    collectOnDelivery: number
+    refundAmount: number
+  }
+  cashback: { amount: number; status: string; source: string | null }[]
+  buyerGstin: string | null
+}
+
 export interface OrderDetail extends Order {
+  bill?: OrderBill
   customer_name: string
   customer_phone: string
   customer_email?: string

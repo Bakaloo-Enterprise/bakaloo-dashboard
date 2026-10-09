@@ -1,5 +1,6 @@
 "use client"
 
+import { BillSummary } from "@/components/orders/BillSummary"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -672,41 +673,30 @@ export function OrderDetailDrawer({ orderId, open, onClose }: OrderDetailDrawerP
                     Payment
                   </h4>
                   <div className="space-y-1.5 text-sm">
-                    <Row label="Subtotal" value={formatINR(order.subtotal)} />
-                    <Row label="Delivery Fee" value={formatINR(order.delivery_fee)} />
-                    {order.platform_fee > 0 && (
-                      <Row label="Platform Fee" value={formatINR(order.platform_fee)} />
+                    {order.bill ? (
+                      <BillSummary bill={order.bill} />
+                    ) : (
+                      <>
+                        <Row label="Subtotal" value={formatINR(order.subtotal)} />
+                        <Row label="Delivery Fee" value={formatINR(order.delivery_fee)} />
+                        {order.platform_fee > 0 && <Row label="Platform Fee" value={formatINR(order.platform_fee)} />}
+                        {order.handling_fee > 0 && <Row label="Handling Fee" value={formatINR(order.handling_fee)} />}
+                        {order.late_night_fee > 0 && <Row label="Late Night Fee" value={formatINR(order.late_night_fee)} />}
+                        {order.tip_amount > 0 && <Row label="Tip Amount" value={formatINR(order.tip_amount)} />}
+                        {order.tax_amount > 0 && <Row label="Tax" value={formatINR(order.tax_amount)} />}
+                        {order.discount_amount > 0 && (
+                          <Row
+                            label={`Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}`}
+                            value={`-${formatINR(order.discount_amount)}`}
+                            className="text-success font-semibold"
+                          />
+                        )}
+                        <Separator />
+                        <Row label="Total" value={formatINR(order.total_amount)} className="font-bold text-base text-foreground" />
+                      </>
                     )}
-                    {order.handling_fee > 0 && (
-                      <Row label="Handling Fee" value={formatINR(order.handling_fee)} />
-                    )}
-                    {order.late_night_fee > 0 && (
-                      <Row label="Late Night Fee" value={formatINR(order.late_night_fee)} />
-                    )}
-                    {order.tip_amount > 0 && (
-                      <Row label="Tip Amount" value={formatINR(order.tip_amount)} />
-                    )}
-                    {order.tax_amount > 0 && (
-                      <Row label="Tax" value={formatINR(order.tax_amount)} />
-                    )}
-                    {order.discount_amount > 0 && (
-                      <Row
-                        label={`Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}`}
-                        value={`-${formatINR(order.discount_amount)}`}
-                        className="text-success font-semibold"
-                      />
-                    )}
-                    <Separator />
-                    <Row
-                      label="Total"
-                      value={formatINR(order.total_amount)}
-                      className="font-bold text-base text-foreground"
-                    />
                     <p className="text-xs text-muted-foreground mt-1">
-                      <span className="font-medium text-foreground">
-                        {PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method}
-                      </span>
-                      {order.payment?.status && ` · ${order.payment.status}`}
+                      {order.payment?.status && `Razorpay: ${order.payment.status}`}
                       {order.payment?.razorpay_payment_id &&
                         ` · ${order.payment.razorpay_payment_id}`}
                     </p>
@@ -792,7 +782,7 @@ export function OrderDetailDrawer({ orderId, open, onClose }: OrderDetailDrawerP
                         )}
                       </div>
                     )}
-                    {order.savings_total > 0 && (
+                    {!order.bill && order.savings_total > 0 && (
                       <p className="text-xs text-success font-semibold mt-1">
                         Customer saved {formatINR(order.savings_total)} on this order
                       </p>

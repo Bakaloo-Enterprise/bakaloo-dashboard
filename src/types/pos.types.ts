@@ -1,3 +1,4 @@
+import type { OrderBill } from "@/types/order.types"
 export type LaneId = "NEW" | "PICKING" | "PACKING" | "READY" | "WAITING_RIDER" | "PICKED_UP" | "OUT_FOR_DELIVERY"
 export type Stage = "PICK" | "PACK"
 export type PosStation = "PICKER" | "PACKER"
@@ -108,6 +109,7 @@ export interface OrderDetail {
   rider: null | { name: string; id: string; assignment: string; pickup: string | null; assignedAt: string | null; pickedUpAt: string | null }
   handover: null | { by: string | null; at: string; scan: string }
   printJobs: PrintJob[]
+  bill: OrderBill | null
   can: {
     assignPeople: boolean
     startPick: boolean

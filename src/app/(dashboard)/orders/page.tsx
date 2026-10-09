@@ -864,6 +864,17 @@ function OrdersContent() {
                         <span className="text-xs text-muted-foreground">
                           {PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method}
                         </span>
+                        {/* Wallet split — a "COD" row used to hide that part of the
+                            total was already paid from the wallet, so the rider's
+                            cash amount didn't match the Total column. */}
+                        {Number(order.wallet_amount_used) > 0 && (
+                          <span className="text-[10px] font-medium text-primary">
+                            Wallet {formatINR(Number(order.wallet_amount_used))}
+                            {order.total_amount - Number(order.wallet_amount_used) > 0.005
+                              ? ` + ${formatINR(order.total_amount - Number(order.wallet_amount_used))} ${order.payment_method === "COD" ? "cash" : "Razorpay"}`
+                              : " (full)"}
+                          </span>
+                        )}
                         {/* Razorpay's own status, inline — so "did the money
                             actually come through" is visible while scanning
                             the list, not only after opening the order. */}
