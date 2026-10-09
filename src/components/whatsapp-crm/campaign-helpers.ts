@@ -126,7 +126,31 @@ export const RUN_REASON: Record<string, string> = {
   LABEL_ONLY: "Label added",
   INTERNAL_ERROR: "Internal error",
   SEND_FAILED: "Send failed",
+  RECENTLY_REMINDED: "Already reminded recently (one reminder per customer)",
+  FALLBACK_TEXT: "Sent as a normal message (template could not be sent)",
+  FALLBACK_SEND_FAILED: "Normal message could not be sent",
+  FALLBACK_SENT: "Template was refused later; normal message sent",
+  FALLBACK_NOT_ALLOWED: "Template was refused; no normal message possible",
+  FALLBACK_SKIPPED_CART_RECOVERED: "Template was refused; customer had already bought",
+  FALLBACK_SKIPPED_QUIET_HOURS: "Template was refused; held back at night",
+  FALLBACK_SKIPPED_EVENT_GONE: "Template was refused; cart no longer exists",
+  MARKETING_CAP: "Meta’s limit on marketing messages to this person",
 }
+
+/** Suggested normal messages for a cart reminder (used by the “Use suggested text” button). */
+export const SUGGESTED_CART_TEXTS = {
+  gu: "નમસ્તે {{customer_name}} 👋\nતમારી Bakaloo Cart માં {{cart_items}} (₹{{cart_value}}) રહી ગયું છે. 🛒\nOrder પૂરો કરો અને તાજા શાકભાજી તમારા ઘરે મેળવો:\n{{cart_link}}\nકોઈ મદદ જોઈએ તો અહીં જ લખો.",
+  en: "Hi {{customer_name}} 👋\nYou left {{cart_items}} (₹{{cart_value}}) in your Bakaloo cart. 🛒\nComplete your order here:\n{{cart_link}}\nNeed help? Just reply here.",
+  gl: "Namaste {{customer_name}} 👋\nTamari Bakaloo cart ma {{cart_items}} (₹{{cart_value}}) rahi gayu chhe. 🛒\nOrder purn karva ahi click karo:\n{{cart_link}}\nKoi madad joiye to ahi j lakho.",
+} as const
+
+export const COOLDOWN_OPTIONS = [
+  { hours: 12, label: "12 hours" },
+  { hours: 24, label: "1 day (recommended)" },
+  { hours: 48, label: "2 days" },
+  { hours: 168, label: "7 days" },
+  { hours: 0, label: "No limit" },
+]
 
 export function describeCondition(c: WorkflowCondition): string {
   return `${FIELD_LABEL[c.field] ?? c.field} ${OP_LABEL[c.op]} ${c.value}`
@@ -135,7 +159,8 @@ export function describeCondition(c: WorkflowCondition): string {
 export function describeTrigger(w: Pick<Workflow, "trigger_type" | "trigger_config">): string {
   if (w.trigger_type === "CART_ABANDONED") {
     const m = w.trigger_config.delay_minutes ?? 5
-    return `A cart sits unbought for ${m >= 60 && m % 60 === 0 ? `${m / 60} hour${m === 60 ? "" : "s"}` : `${m} minute${m === 1 ? "" : "s"}`}`
+    const cd = w.trigger_config.cooldown_hours ?? 24
+    return `A cart sits unbought for ${m >= 60 && m % 60 === 0 ? `${m / 60} hour${m === 60 ? "" : "s"}` : `${m} minute${m === 1 ? "" : "s"}`}${cd > 0 ? ` (one reminder per customer per ${cd % 24 === 0 ? `${cd / 24} day${cd === 24 ? "" : "s"}` : `${cd} hours`})` : ""}`
   }
   const s = ORDER_STATUS_OPTIONS.find((o) => o.value === w.trigger_config.status)?.label ?? w.trigger_config.status ?? "a status"
   return `An order becomes “${s}”`
@@ -143,7 +168,7 @@ export function describeTrigger(w: Pick<Workflow, "trigger_type" | "trigger_conf
 
 export function describeAction(a: WorkflowAction, names: { template?: (id: string) => string | undefined; label?: (id: string) => string | undefined; coupon?: boolean }): string {
   if (a.type === "ADD_LABEL") return `Add the label “${names.label?.(a.labelId) ?? "…"}”`
-  return `Send “${names.template?.(a.templateId) ?? "template"}”${a.couponId ? " with a coupon" : ""}`
+  return `Send “${names.template?.(a.templateId) ?? "template"}”${a.couponId ? " with a coupon" : ""}${a.fallbackTexts ? ", or a normal message if the template can’t be delivered" : ""}`
 }
 
 /** The variables a staff member can write inside a value, e.g. {{customer_name}}. */

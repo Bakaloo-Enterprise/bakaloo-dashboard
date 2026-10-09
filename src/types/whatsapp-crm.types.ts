@@ -539,15 +539,18 @@ export type PictureSource =
   | { mode: "OFFER_PRODUCTS"; fallbackUrl?: string }
   | { mode: "CART_PRODUCT"; pick: "TOP" | "RANDOM"; fallbackUrl?: string }
 
+/** A normal (non-template) message in each language, sent when the template cannot be delivered and the customer wrote in the last 24 hours */
+export interface FallbackTexts { gu?: string; en?: string; gl?: string }
+
 export type WorkflowAction =
-  | { type: "SEND_TEMPLATE"; templateId: string; values: Record<string, string>; couponId?: string; imageSource?: PictureSource }
+  | { type: "SEND_TEMPLATE"; templateId: string; values: Record<string, string>; couponId?: string; imageSource?: PictureSource; fallbackTexts?: FallbackTexts }
   | { type: "ADD_LABEL"; labelId: string }
 export interface Workflow {
   id: string
   name: string
   description: string | null
   trigger_type: WorkflowTrigger
-  trigger_config: { delay_minutes?: number; status?: string }
+  trigger_config: { delay_minutes?: number; cooldown_hours?: number; status?: string }
   conditions: WorkflowCondition[]
   actions: WorkflowAction[]
   is_active: boolean
@@ -570,7 +573,7 @@ export interface WorkflowInput {
   name: string
   description?: string
   triggerType: WorkflowTrigger
-  triggerConfig: { delayMinutes?: number; status?: string }
+  triggerConfig: { delayMinutes?: number; cooldownHours?: number; status?: string }
   conditions: WorkflowCondition[]
   actions: WorkflowAction[]
 }

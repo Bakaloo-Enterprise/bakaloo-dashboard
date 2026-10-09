@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useCoupons } from "@/hooks/useCoupons"
 import { useLabels, useTemplates, useWorkflowCatalog } from "@/hooks/useWhatsappCrm"
 import { PictureSourcePicker, pictureOk } from "./PictureSourcePicker"
-import type { ConditionOp, PictureSource, Workflow, WorkflowAction, WorkflowInput, WorkflowTrigger } from "@/types/whatsapp-crm.types"
-import { cleanConditions, FIELD_LABEL, OP_LABEL, ORDER_STATUS_OPTIONS, TEXT_FIELDS, tokenHint, TRIGGER_LABEL } from "./campaign-helpers"
+import type { ConditionOp, FallbackTexts, PictureSource, Workflow, WorkflowAction, WorkflowInput, WorkflowTrigger } from "@/types/whatsapp-crm.types"
+import { cleanConditions, COOLDOWN_OPTIONS, FIELD_LABEL, OP_LABEL, ORDER_STATUS_OPTIONS, SUGGESTED_CART_TEXTS, TEXT_FIELDS, tokenHint, TRIGGER_LABEL } from "./campaign-helpers"
 import { sendVariables } from "./template-helpers"
 
 interface Props {
@@ -32,6 +33,8 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
   const [name, setName] = useState("")
   const [trigger, setTrigger] = useState<WorkflowTrigger>("CART_ABANDONED")
   const [delay, setDelay] = useState(5)
+  const [cooldown, setCooldown] = useState(24)
+  const [fallback, setFallback] = useState<FallbackTexts>({})
   const [status, setStatus] = useState("PACKED")
   const [rows, setRows] = useState<Row[]>([])
   const [templateId, setTemplateId] = useState("")
@@ -52,12 +55,14 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
     setName(workflow?.name ?? "")
     setTrigger(workflow?.trigger_type ?? "CART_ABANDONED")
     setDelay(workflow?.trigger_config.delay_minutes ?? 5)
+    setCooldown(workflow?.trigger_config.cooldown_hours ?? 24)
     setStatus(workflow?.trigger_config.status ?? "PACKED")
     setRows((workflow?.conditions ?? []).map((c) => ({ field: c.field, op: c.op, value: String(c.value) })))
     setTemplateId(send?.templateId ?? "")
     setPicture(send?.imageSource ?? null)
     setValues(send?.values ?? {})
     setCouponId(send?.couponId ?? "")
+    setFallback(send?.fallbackTexts ?? {})
     setLabelId(label?.labelId ?? "")
   }, [open, workflow])
 
@@ -72,18 +77,20 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
   const autoFilled = tokens.filter((t) => t !== "coupon_code" || usesCoupon)
   const needTyped = tpl ? sendVariables(tpl).filter((v) => !autoFilled.includes(String(v.key ?? v.name))) : []
   const missing = needTyped.some((v) => !values[String(v.key ?? v.name)]?.trim())
+  const fallbackClean: FallbackTexts = Object.fromEntries(Object.entries(fallback).filter(([, v]) => v && v.trim()).map(([k, v]) => [k, v!.trim()]))
+  const hasFallback = Object.keys(fallbackClean).length > 0
   const editing = Boolean(workflow)
   const valid = name.trim() && templateId && !missing && (!needsPicture || pictureOk(picture)) && (trigger !== "ORDER_STATUS" || status) && rows.every((r) => !r.field || r.value.trim() !== "")
 
   const submit = () => {
     const spec: Record<string, string> = {}
     for (const v of needTyped) spec[String(v.key ?? v.name)] = values[String(v.key ?? v.name)] ?? ""
-    const actions: WorkflowAction[] = [{ type: "SEND_TEMPLATE", templateId, values: spec, ...(usesCoupon ? { couponId } : {}), ...(needsPicture && picture ? { imageSource: picture } : {}) }]
+    const actions: WorkflowAction[] = [{ type: "SEND_TEMPLATE", templateId, values: spec, ...(usesCoupon ? { couponId } : {}), ...(needsPicture && picture ? { imageSource: picture } : {}), ...(hasFallback ? { fallbackTexts: fallbackClean } : {}) }]
     if (labelId) actions.push({ type: "ADD_LABEL", labelId })
     onSave({
       name: name.trim(),
       triggerType: trigger,
-      triggerConfig: trigger === "CART_ABANDONED" ? { delayMinutes: delay } : { status },
+      triggerConfig: trigger === "CART_ABANDONED" ? { delayMinutes: delay, cooldownHours: cooldown } : { status },
       conditions: cleanConditions(rows),
       actions,
     })
@@ -117,6 +124,12 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
                   {!DELAYS.includes(delay) && <option value={delay}>{delay} minutes</option>}
                 </select>
                 <p className="mt-1 text-[11px] text-muted-foreground">Carts left more than 2 hours past this time are not reminded.</p>
+                <Label htmlFor="w-cooldown" className="mt-3 block text-xs">Remind the same customer at most once every</Label>
+                <select id="w-cooldown" className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm" value={cooldown} onChange={(e) => setCooldown(Number(e.target.value))}>
+                  {COOLDOWN_OPTIONS.map((o) => <option key={o.hours} value={o.hours}>{o.label}</option>)}
+                  {!COOLDOWN_OPTIONS.some((o) => o.hours === cooldown) && <option value={cooldown}>{cooldown} hours</option>}
+                </select>
+                <p className="mt-1 text-[11px] text-muted-foreground">Stops a customer who adds and leaves again from getting two reminders minutes apart.</p>
               </div>
             ) : (
               <div className="mt-2">
@@ -183,6 +196,26 @@ export function WorkflowDialog({ open, workflow, saving, onClose, onSave }: Prop
             ))}
             {trigger === "CART_ABANDONED" && catalog.data && !catalog.data.cartLinkConfigured && tpl && JSON.stringify(tpl.variables).includes("cart_") && (
               <p role="alert" className="mt-2 text-xs text-amber-800">The cart link is not set up on the server yet (CUSTOMER_APP_URL), so this workflow cannot be switched on.</p>
+            )}
+
+            {trigger === "CART_ABANDONED" && (
+              <div className="mt-3 rounded-md border border-dashed p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs font-semibold">If the template can’t be delivered, send a normal message (optional)</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setFallback({ ...SUGGESTED_CART_TEXTS })}>Use suggested text</Button>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Used when Meta refuses or blocks the template (for example its limit on marketing messages), or the customer has not opted in. WhatsApp only allows a normal message
+                  for 24 hours after the customer last wrote to you, so it is skipped otherwise. Never sent to people who opted out. The customer’s language is used when known; otherwise Gujarati.
+                </p>
+                {([["gu", "Gujarati (ગુજરાતી)"], ["en", "English"], ["gl", "Gujarati in English letters"]] as const).map(([k, label]) => (
+                  <div key={k} className="mt-2">
+                    <Label htmlFor={`fb-${k}`} className="text-xs">{label}</Label>
+                    <Textarea id={`fb-${k}`} rows={4} maxLength={1000} value={fallback[k] ?? ""} onChange={(e) => setFallback((cur) => ({ ...cur, [k]: e.target.value }))} className="mt-0.5" />
+                  </div>
+                ))}
+                <p className="mt-1 text-[11px] text-muted-foreground">You can use: {"{{customer_name}} {{cart_items}} {{cart_value}} {{item_count}} {{cart_link}}"}{usesCoupon ? " {{coupon_code}}" : ""}. If a value is missing for a customer, the message is not sent.</p>
+              </div>
             )}
 
             <div className="mt-3">

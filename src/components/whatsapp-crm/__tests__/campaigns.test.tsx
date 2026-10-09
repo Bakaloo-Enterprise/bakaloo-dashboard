@@ -110,8 +110,9 @@ describe("campaign helpers", () => {
     expect(isQuietHoursIST(new Date("2026-10-01T03:30:00Z"))).toBe(false)
   })
   it("describes workflows in plain words and cleans condition rows", () => {
-    expect(describeTrigger({ trigger_type: "CART_ABANDONED", trigger_config: { delay_minutes: 5 } })).toBe("A cart sits unbought for 5 minutes")
-    expect(describeTrigger({ trigger_type: "CART_ABANDONED", trigger_config: { delay_minutes: 120 } })).toBe("A cart sits unbought for 2 hours")
+    expect(describeTrigger({ trigger_type: "CART_ABANDONED", trigger_config: { delay_minutes: 5 } })).toBe("A cart sits unbought for 5 minutes (one reminder per customer per 1 day)")
+    expect(describeTrigger({ trigger_type: "CART_ABANDONED", trigger_config: { delay_minutes: 5, cooldown_hours: 0 } })).toBe("A cart sits unbought for 5 minutes")
+    expect(describeTrigger({ trigger_type: "CART_ABANDONED", trigger_config: { delay_minutes: 120, cooldown_hours: 0 } })).toBe("A cart sits unbought for 2 hours")
     expect(describeTrigger({ trigger_type: "ORDER_STATUS", trigger_config: { status: "OUT_FOR_DELIVERY" } })).toBe("An order becomes “Out for delivery”")
     expect(describeCondition({ field: "cart_value", op: "gt", value: 500 })).toBe("Cart value (₹) is more than 500")
     expect(cleanConditions([{ field: "cart_value", op: "gt", value: "500" }, { field: "cart_value", op: "gt", value: "" }, { field: "payment_method", op: "eq", value: " COD " }, { field: "order_total", op: "gt", value: "abc" }]))
@@ -257,10 +258,35 @@ describe("WorkflowDialog", () => {
     expect(onSave).toHaveBeenCalledWith({
       name: "Cart rescue",
       triggerType: "CART_ABANDONED",
-      triggerConfig: { delayMinutes: 15 },
+      triggerConfig: { delayMinutes: 15, cooldownHours: 24 },
       conditions: [{ field: "cart_value", op: "gt", value: 500 }],
       actions: [{ type: "SEND_TEMPLATE", templateId: "t9", values: {}, couponId: "cp1" }],
     })
+  })
+
+  it("cart reminder: sets the reminder gap and a normal-message fallback in three languages, and sends only the filled ones", async () => {
+    api.getTemplates.mockResolvedValue({ templates: [cartTpl], counts: {}, lastSyncedAt: null, purposes: [] })
+    const onSave = vi.fn()
+    wrap(<WorkflowDialog open workflow={null} saving={false} onClose={vi.fn()} onSave={onSave} />)
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Cart" } })
+    await screen.findByRole("option", { name: /cart_reminder/ })
+    fireEvent.change(screen.getByLabelText("Send this message"), { target: { value: "t9" } })
+    fireEvent.change(await screen.findByLabelText("coupon code"), { target: { value: "SAVE10" } })
+    fireEvent.change(screen.getByLabelText("Remind the same customer at most once every"), { target: { value: "48" } })
+    fireEvent.change(screen.getByLabelText("English"), { target: { value: "  Hi {{customer_name}} {{cart_link}}  " } })
+    fireEvent.click(screen.getByRole("button", { name: "Save" }))
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      triggerConfig: { delayMinutes: 5, cooldownHours: 48 },
+      actions: [expect.objectContaining({ type: "SEND_TEMPLATE", fallbackTexts: { en: "Hi {{customer_name}} {{cart_link}}" } })],
+    }))
+  })
+
+  it("“Use suggested text” fills Gujarati, English and Roman Gujarati", async () => {
+    wrap(<WorkflowDialog open workflow={null} saving={false} onClose={vi.fn()} onSave={vi.fn()} />)
+    fireEvent.click(await screen.findByRole("button", { name: "Use suggested text" }))
+    expect((screen.getByLabelText("Gujarati (ગુજરાતી)") as HTMLTextAreaElement).value).toMatch(/\{\{cart_link\}\}/)
+    expect((screen.getByLabelText("English") as HTMLTextAreaElement).value).toMatch(/Complete your order/)
+    expect((screen.getByLabelText("Gujarati in English letters") as HTMLTextAreaElement).value).toMatch(/Namaste/)
   })
 
   it("an existing workflow keeps its trigger type fixed", async () => {
