@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { BotRuleDialog } from "@/components/whatsapp-crm/BotRuleDialog"
+import { BotKnowledgePanel } from "@/components/whatsapp-crm/BotKnowledgePanel"
 import { BotTester } from "@/components/whatsapp-crm/BotTester"
 import { ACTION_LABEL, keywordSummary, WHEN_LABEL } from "@/components/whatsapp-crm/bot-helpers"
 import { useBotActivity, useBotMutations, useBotRules, useBotSettings, useCrmMe } from "@/hooks/useWhatsappCrm"
@@ -34,6 +35,8 @@ const OUTCOME_LABEL: Record<string, string> = {
   SEND_FAILED: "Send failed → person",
   SKIPPED_COOLDOWN: "Skipped (already answered)",
   SKIPPED_STALE: "Skipped (too old)",
+  IGNORED: "Stayed silent (e.g. “Ok”)",
+  LONG_TEXT: "Long message → person",
 }
 
 export default function BotPage() {
@@ -48,11 +51,17 @@ export default function BotPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [fallbackText, setFallbackText] = useState("")
   const [maxReplies, setMaxReplies] = useState(6)
+  const [fallbackGu, setFallbackGu] = useState("")
+  const [fallbackGl, setFallbackGl] = useState("")
+  const [links, setLinks] = useState({ play: "", app: "", site: "" })
 
   useEffect(() => {
     if (settings.data) {
       setFallbackText(settings.data.fallback_text)
       setMaxReplies(settings.data.max_replies_per_hour)
+      setFallbackGu(settings.data.fallback_text_gu ?? "")
+      setFallbackGl(settings.data.fallback_text_gl ?? "")
+      setLinks({ play: settings.data.play_store_url, app: settings.data.app_store_url, site: settings.data.website_url })
     }
   }, [settings.data])
 
@@ -76,7 +85,7 @@ export default function BotPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Auto-reply Bot" subtitle="Simple keyword rules that answer common questions. No AI — you control every word. Anything it can’t answer goes to your team." />
+      <PageHeader title="Auto-reply Bot" subtitle="Answers common questions in the customer’s own language (English, Gujarati, or Gujarati in English letters). No AI — you control every word. Anything it can’t answer goes to your team." />
 
       {/* master switch */}
       <section className={cn("rounded-lg border p-4", s?.enabled ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20" : "bg-card")} aria-label="Bot on or off">
@@ -132,6 +141,33 @@ export default function BotPage() {
               Save message
             </Button>
           </div>
+          <div>
+            <Label htmlFor="fallback-gu">Same message in Gujarati</Label>
+            <Textarea id="fallback-gu" rows={2} value={fallbackGu} onChange={(e) => setFallbackGu(e.target.value)} disabled={!s.fallback_enabled} className="mt-1" maxLength={1000} />
+            <Button className="mt-2" variant="outline" size="sm" disabled={!s.fallback_enabled || fallbackGu.trim() === (s.fallback_text_gu ?? "") || m.saveSettings.isPending} onClick={() => m.saveSettings.mutate({ fallbackTextGu: fallbackGu })}>Save Gujarati</Button>
+          </div>
+          <div>
+            <Label htmlFor="fallback-gl">Same message in Gujarati (English letters)</Label>
+            <Textarea id="fallback-gl" rows={2} value={fallbackGl} onChange={(e) => setFallbackGl(e.target.value)} disabled={!s.fallback_enabled} className="mt-1" maxLength={1000} />
+            <Button className="mt-2" variant="outline" size="sm" disabled={!s.fallback_enabled || fallbackGl.trim() === (s.fallback_text_gl ?? "") || m.saveSettings.isPending} onClick={() => m.saveSettings.mutate({ fallbackTextGl: fallbackGl })}>Save Roman Gujarati</Button>
+          </div>
+          <div className="md:col-span-2 grid gap-3 sm:grid-cols-3">
+            <div><Label htmlFor="l-play">Android app link</Label><Input id="l-play" value={links.play} onChange={(e) => setLinks({ ...links, play: e.target.value })} className="mt-1" /></div>
+            <div><Label htmlFor="l-app">iPhone app link</Label><Input id="l-app" value={links.app} onChange={(e) => setLinks({ ...links, app: e.target.value })} className="mt-1" /></div>
+            <div><Label htmlFor="l-site">Website</Label><Input id="l-site" value={links.site} onChange={(e) => setLinks({ ...links, site: e.target.value })} className="mt-1" /></div>
+            <Button className="sm:col-span-3 w-fit" variant="outline" size="sm"
+              disabled={m.saveSettings.isPending || (links.play === s.play_store_url && links.app === s.app_store_url && links.site === s.website_url)}
+              onClick={() => m.saveSettings.mutate({ playStoreUrl: links.play.trim(), appStoreUrl: links.app.trim(), websiteUrl: links.site.trim() })}>Save links</Button>
+          </div>
+          <div className="md:col-span-2 flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label htmlFor="quote">Tell customers the price when they ask about an item</Label>
+              <p className="text-xs text-muted-foreground">
+                {s.quote_prices ? "ON: the bot shows today’s shop price (a range if shops differ) and says it can change." : "OFF: the bot says “yes, we have it” and sends the app link, without a price. Turn on once you are happy that shop prices are right."}
+              </p>
+            </div>
+            <Switch id="quote" checked={s.quote_prices} disabled={m.saveSettings.isPending} onCheckedChange={(v) => m.saveSettings.mutate({ quotePrices: v })} aria-label="Quote prices in chat" />
+          </div>
         </section>
       )}
 
@@ -157,6 +193,9 @@ export default function BotPage() {
                 </div>
                 <p className="truncate text-xs text-muted-foreground">If: {keywordSummary(r)}</p>
                 {r.reply_text && <p className="mt-0.5 line-clamp-2 whitespace-pre-line text-xs">{r.reply_text}</p>}
+                {r.reply_text && (!r.reply_text_gu || !r.reply_text_gl) && (
+                  <p className="mt-0.5 text-[11px] text-amber-700 dark:text-amber-400">Missing {[!r.reply_text_gu && "Gujarati", !r.reply_text_gl && "Roman Gujarati"].filter(Boolean).join(" and ")} reply — customers writing that way get English.</p>
+                )}
               </div>
               <Switch checked={r.is_active} onCheckedChange={(v) => m.updateRule.mutate({ id: r.id, input: { isActive: v } })} aria-label={`${r.name} enabled`} />
               <Button variant="ghost" size="icon" aria-label={`Edit ${r.name}`} onClick={() => { setEditing(r); setDialogOpen(true) }}><Pencil className="h-4 w-4" /></Button>
@@ -165,6 +204,8 @@ export default function BotPage() {
           ))}
         </ul>
       </section>
+
+      <BotKnowledgePanel />
 
       {/* activity */}
       <section aria-label="Recent bot activity">

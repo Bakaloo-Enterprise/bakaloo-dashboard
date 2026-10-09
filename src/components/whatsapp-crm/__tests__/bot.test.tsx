@@ -37,7 +37,7 @@ const wrap = (ui: ReactNode) => {
 
 const rule = (o: Partial<BotRule> = {}): BotRule => ({
   id: "r1", name: "Offers", position: 10, is_active: true, match_type: "CONTAINS", keywords: ["offer", "coupon"], exact_keywords: ["4"],
-  when_hours: "ANY", action: "REPLY", reply_text: "See the app.", cooldown_minutes: 0, ...o,
+  when_hours: "ANY", action: "REPLY", reply_text: "See the app.", reply_text_gu: null, reply_text_gl: null, asks_area: false, cooldown_minutes: 0, ...o,
 })
 
 describe("bot helpers", () => {
@@ -61,7 +61,7 @@ describe("BotRuleDialog", () => {
     fireEvent.change(screen.getByLabelText("Rule name"), { target: { value: "Wholesale" } })
     fireEvent.change(screen.getByLabelText(/Words or phrases/), { target: { value: "wholesale\nbulk order" } })
     expect(save).toBeDisabled() // still no reply
-    fireEvent.change(screen.getByLabelText("Reply"), { target: { value: "Our team will call you." } })
+    fireEvent.change(screen.getByLabelText("Reply in English"), { target: { value: "Our team will call you." } })
     expect(save).toBeEnabled()
   })
 
@@ -71,12 +71,13 @@ describe("BotRuleDialog", () => {
     fireEvent.change(screen.getByLabelText("Rule name"), { target: { value: "  Wholesale  " } })
     fireEvent.change(screen.getByLabelText(/Words or phrases/), { target: { value: "wholesale, bulk order" } })
     fireEvent.change(screen.getByLabelText(/Exact replies/), { target: { value: "7" } })
-    fireEvent.change(screen.getByLabelText("Reply"), { target: { value: "  Hi {{customer_name}}  " } })
+    fireEvent.change(screen.getByLabelText("Reply in English"), { target: { value: "  Hi {{customer_name}}  " } })
+    fireEvent.change(screen.getByLabelText(/Reply in Gujarati \(/), { target: { value: "  નમસ્તે  " } })
     fireEvent.change(screen.getByLabelText(/Don’t repeat/), { target: { value: "30" } })
     fireEvent.click(screen.getByRole("button", { name: "Save rule" }))
     expect(onSave).toHaveBeenCalledWith({
       name: "Wholesale", matchType: "CONTAINS", keywords: ["wholesale", "bulk order"], exactKeywords: ["7"],
-      whenHours: "ANY", action: "REPLY", replyText: "Hi {{customer_name}}", cooldownMinutes: 30,
+      whenHours: "ANY", action: "REPLY", replyText: "Hi {{customer_name}}", replyTextGu: "નમસ્તે", replyTextGl: null, asksArea: false, cooldownMinutes: 30,
     })
   })
 
@@ -85,7 +86,7 @@ describe("BotRuleDialog", () => {
     expect((screen.getByLabelText("Rule name") as HTMLInputElement).value).toBe("Offers")
     expect((screen.getByLabelText(/Words or phrases/) as HTMLTextAreaElement).value).toBe("offer\ncoupon")
     fireEvent.click(screen.getByRole("button", { name: "{{customer_name}}" }))
-    expect((screen.getByLabelText("Reply") as HTMLTextAreaElement).value).toBe("See the app.{{customer_name}}")
+    expect((screen.getByLabelText("Reply in English") as HTMLTextAreaElement).value).toBe("See the app.{{customer_name}}")
   })
 
   it("a PIN-code rule needs no keywords", () => {
@@ -96,7 +97,16 @@ describe("BotRuleDialog", () => {
 
   it("a hand-to-a-person rule needs no reply", () => {
     render(<BotRuleDialog open rule={rule({ action: "HANDOFF", reply_text: null })} saving={false} onClose={vi.fn()} onSave={vi.fn()} />)
-    expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Reply in English")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Save rule" })).toBeEnabled()
+  })
+
+  it("an area rule and a stay-silent rule need neither keywords nor (for silent) a reply", () => {
+    const { rerender } = render(<BotRuleDialog open rule={rule({ match_type: "AREA_YES", keywords: [], exact_keywords: [] })} saving={false} onClose={vi.fn()} onSave={vi.fn()} />)
+    expect(screen.queryByLabelText(/Words or phrases/)).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Save rule" })).toBeEnabled()
+    rerender(<BotRuleDialog open rule={rule({ action: "IGNORE", reply_text: null })} saving={false} onClose={vi.fn()} onSave={vi.fn()} />)
+    expect(screen.queryByLabelText("Reply in English")).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Save rule" })).toBeEnabled()
   })
 
@@ -115,7 +125,7 @@ describe("BotTester", () => {
     await waitFor(() => expect(screen.getByText("Rule: Talk to a person")).toBeInTheDocument())
     expect(screen.getByText("The bot answers, then hands to a person")).toBeInTheDocument()
     expect(screen.getByText("Connecting you with our team.")).toBeInTheDocument()
-    expect(testBotApi).toHaveBeenCalledWith("agent please", "NOW")
+    expect(testBotApi).toHaveBeenCalledWith("agent please", "NOW", { language: undefined, awaitingArea: false })
   })
   it("explains when no rule matches", async () => {
     testBotApi.mockResolvedValue({ matched: false, isOpen: false, outcome: "NO_MATCH", handoff: true, reply: null, rule: null })
@@ -125,6 +135,16 @@ describe("BotTester", () => {
     await waitFor(() => expect(screen.getByText("No rule matched")).toBeInTheDocument())
     expect(screen.getByText("No rule matches: handed to a person")).toBeInTheDocument()
     expect(screen.getByText("The bot would send no message.")).toBeInTheDocument()
+  })
+  it("shows the detected language and area, and can force a language", async () => {
+    testBotApi.mockResolvedValue({ matched: true, isOpen: true, outcome: "REPLIED", handoff: false, reply: "જણાવવા બદલ આભાર", rule: { id: "r", name: "Area we do not deliver to (yet)", action: "REPLY" }, language: "gu", area: { name: "Amroli", serviceable: false }, product: null })
+    wrap(<BotTester />)
+    fireEvent.change(screen.getByLabelText("Customer message to test"), { target: { value: "Amroli" } })
+    fireEvent.click(screen.getByLabelText("Pretend we just asked “which area are you in?”".replace(/^/, "")) )
+    fireEvent.click(screen.getByRole("button", { name: "Test" }))
+    await waitFor(() => expect(screen.getByText(/Language: Gujarati/)).toBeInTheDocument())
+    expect(screen.getByText(/Area: Amroli \(we do not deliver\)/)).toBeInTheDocument()
+    expect(testBotApi).toHaveBeenCalledWith("Amroli", "NOW", { language: undefined, awaitingArea: true })
   })
   it("Test is disabled for an empty message", () => {
     wrap(<BotTester />)

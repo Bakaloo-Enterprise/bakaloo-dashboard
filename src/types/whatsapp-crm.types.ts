@@ -219,9 +219,10 @@ export interface PipelineFilters {
 }
 
 // ─── Bot (Phase 5) ───────────────────────────────────────────────────
-export type BotMatchType = "CONTAINS" | "EXACT" | "STARTS_WITH" | "PINCODE"
+export type BotMatchType = "CONTAINS" | "EXACT" | "STARTS_WITH" | "PINCODE" | "AREA_YES" | "AREA_NO" | "AREA_ASKED" | "PRODUCT"
 export type BotWhenHours = "ANY" | "OPEN" | "CLOSED"
-export type BotAction = "REPLY" | "REPLY_HANDOFF" | "HANDOFF" | "OPT_OUT" | "OPT_IN"
+export type BotAction = "REPLY" | "REPLY_HANDOFF" | "HANDOFF" | "OPT_OUT" | "OPT_IN" | "IGNORE"
+export type BotLanguage = "en" | "gu" | "gl"
 
 export interface BotRule {
   id: string
@@ -234,6 +235,9 @@ export interface BotRule {
   when_hours: BotWhenHours
   action: BotAction
   reply_text: string | null
+  reply_text_gu: string | null
+  reply_text_gl: string | null
+  asks_area: boolean
   cooldown_minutes: number
 }
 
@@ -245,6 +249,9 @@ export interface BotRuleInput {
   whenHours?: BotWhenHours
   action?: BotAction
   replyText?: string | null
+  replyTextGu?: string | null
+  replyTextGl?: string | null
+  asksArea?: boolean
   cooldownMinutes?: number
   isActive?: boolean
 }
@@ -255,6 +262,12 @@ export interface BotSettings {
   max_replies_per_hour: number
   fallback_enabled: boolean
   fallback_text: string
+  fallback_text_gu: string | null
+  fallback_text_gl: string | null
+  play_store_url: string
+  app_store_url: string
+  website_url: string
+  quote_prices: boolean
 }
 
 export interface BotSettingsInput {
@@ -263,15 +276,56 @@ export interface BotSettingsInput {
   maxRepliesPerHour?: number
   fallbackEnabled?: boolean
   fallbackText?: string
+  fallbackTextGu?: string
+  fallbackTextGl?: string
+  playStoreUrl?: string
+  appStoreUrl?: string
+  websiteUrl?: string
+  quotePrices?: boolean
 }
 
 export interface BotTestResult {
   matched: boolean
   isOpen: boolean
-  outcome: "REPLIED" | "HANDOFF" | "NO_MATCH"
+  outcome: "REPLIED" | "HANDOFF" | "NO_MATCH" | "IGNORED"
   handoff: boolean
   reply: string | null
   rule: { id: string; name: string; action: BotAction } | null
+  language: BotLanguage
+  area: { name: string; serviceable: boolean } | null
+  product: string | null
+}
+
+export interface BotArea {
+  id: string
+  name: string
+  name_gu: string | null
+  aliases: string[]
+  is_serviceable: boolean
+  is_active: boolean
+  position: number
+}
+
+export interface BotAreaInput {
+  name?: string
+  nameGu?: string | null
+  aliases?: string[]
+  isServiceable?: boolean
+  isActive?: boolean
+}
+
+export interface BotWaitingRow {
+  area_id: string | null
+  area: string
+  is_serviceable: boolean | null
+  people: number
+  opted_in: number
+}
+
+export interface BotProductWord {
+  id: string
+  alias: string
+  search_term: string
 }
 
 export interface BotEvent {

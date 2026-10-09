@@ -64,6 +64,14 @@ import {
   reorderBotRules,
   testBot,
   getBotActivity,
+  getBotAreas,
+  createBotArea,
+  updateBotArea,
+  deleteBotArea,
+  getBotWaitingList,
+  getBotProductWords,
+  addBotProductWord,
+  deleteBotProductWord,
   setConversationBot,
   getPipeline,
   moveCard,
@@ -78,7 +86,7 @@ import {
   sendMedia,
 } from "@/services/whatsapp-crm.service"
 import { qk } from "@/lib/query-keys"
-import type { AnalyticsQuery, BreakdownBy, RateCategory, ProspectRowStatus, CampaignInput, CampaignStatus, WorkflowInput, TemplateFilters, TemplateFormError, TemplateInput, BotRuleInput, BotSettingsInput, ConversationFilters, CrmPermission, LabelInput, PipelineBoard, PipelineFilters } from "@/types/whatsapp-crm.types"
+import type { AnalyticsQuery, BreakdownBy, RateCategory, ProspectRowStatus, CampaignInput, CampaignStatus, WorkflowInput, TemplateFilters, TemplateFormError, TemplateInput, BotAreaInput, BotLanguage, BotRuleInput, BotSettingsInput, ConversationFilters, CrmPermission, LabelInput, PipelineBoard, PipelineFilters } from "@/types/whatsapp-crm.types"
 
 export function errorMessage(error: unknown): string {
   const resp = (error as { response?: { data?: { message?: string } } })?.response
@@ -320,7 +328,34 @@ export function useBotMutations() {
     }),
     deleteRule: useMutation({ mutationFn: (id: string) => deleteBotRule(id), onSuccess: () => toast.success("Rule deleted"), onError, onSettled: refresh }),
     reorder: useMutation({ mutationFn: (ids: string[]) => reorderBotRules(ids), onError, onSettled: refresh }),
-    test: useMutation({ mutationFn: ({ message, when }: { message: string; when: "NOW" | "OPEN" | "CLOSED" }) => testBot(message, when), onError }),
+    test: useMutation({
+      mutationFn: ({ message, when, language, awaitingArea }: { message: string; when: "NOW" | "OPEN" | "CLOSED"; language?: BotLanguage; awaitingArea?: boolean }) => testBot(message, when, { language, awaitingArea }),
+      onError,
+    }),
+  }
+}
+
+export function useBotAreas(enabled = true) {
+  return useQuery({ queryKey: qk.crmBotAreas(), queryFn: getBotAreas, enabled, staleTime: 15_000 })
+}
+export function useBotWaitingList(enabled = true) {
+  return useQuery({ queryKey: qk.crmBotWaiting(), queryFn: getBotWaitingList, enabled, staleTime: 15_000 })
+}
+export function useBotProductWords(enabled = true) {
+  return useQuery({ queryKey: qk.crmBotProductWords(), queryFn: getBotProductWords, enabled, staleTime: 30_000 })
+}
+
+/** Delivery areas + product words the bot understands. */
+export function useBotKnowledgeMutations() {
+  const qc = useQueryClient()
+  const refresh = () => qc.invalidateQueries({ queryKey: ["crm", "bot"] })
+  const onError = (err: unknown) => toast.error(errorMessage(err))
+  return {
+    createArea: useMutation({ mutationFn: (input: BotAreaInput) => createBotArea(input), onSuccess: () => toast.success("Area added"), onError, onSettled: refresh }),
+    updateArea: useMutation({ mutationFn: ({ id, input }: { id: string; input: BotAreaInput }) => updateBotArea(id, input), onSuccess: () => toast.success("Area saved"), onError, onSettled: refresh }),
+    deleteArea: useMutation({ mutationFn: (id: string) => deleteBotArea(id), onSuccess: () => toast.success("Area deleted"), onError, onSettled: refresh }),
+    addWord: useMutation({ mutationFn: ({ alias, searchTerm }: { alias: string; searchTerm: string }) => addBotProductWord(alias, searchTerm), onSuccess: () => toast.success("Word added"), onError, onSettled: refresh }),
+    deleteWord: useMutation({ mutationFn: (id: string) => deleteBotProductWord(id), onError, onSettled: refresh }),
   }
 }
 

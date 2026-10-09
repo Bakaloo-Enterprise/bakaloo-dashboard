@@ -32,6 +32,11 @@ import type {
   BotSettings,
   BotSettingsInput,
   BotTestResult,
+  BotArea,
+  BotAreaInput,
+  BotLanguage,
+  BotProductWord,
+  BotWaitingRow,
   LabelInput,
   TemplateDetail,
   TemplateFilters,
@@ -253,9 +258,39 @@ export async function reorderBotRules(ids: string[]) {
   const { data } = await api.post<ApiResponse<BotRule[]>>(`${BASE}/bot/rules/reorder`, { ids })
   return data.data
 }
-export async function testBot(message: string, when: "NOW" | "OPEN" | "CLOSED") {
-  const { data } = await api.post<ApiResponse<BotTestResult>>(`${BASE}/bot/test`, { message, when })
+export async function testBot(message: string, when: "NOW" | "OPEN" | "CLOSED", opts: { language?: BotLanguage; awaitingArea?: boolean } = {}) {
+  const { data } = await api.post<ApiResponse<BotTestResult>>(`${BASE}/bot/test`, { message, when, ...opts })
   return data.data
+}
+export async function getBotAreas() {
+  const { data } = await api.get<ApiResponse<BotArea[]>>(`${BASE}/bot/areas`)
+  return Array.isArray(data.data) ? data.data : []
+}
+export async function createBotArea(input: BotAreaInput) {
+  const { data } = await api.post<ApiResponse<BotArea>>(`${BASE}/bot/areas`, input)
+  return data.data
+}
+export async function updateBotArea(id: string, input: BotAreaInput) {
+  const { data } = await api.patch<ApiResponse<BotArea>>(`${BASE}/bot/areas/${id}`, input)
+  return data.data
+}
+export async function deleteBotArea(id: string) {
+  await api.delete(`${BASE}/bot/areas/${id}`)
+}
+export async function getBotWaitingList() {
+  const { data } = await api.get<ApiResponse<BotWaitingRow[]>>(`${BASE}/bot/waiting-list`)
+  return Array.isArray(data.data) ? data.data : []
+}
+export async function getBotProductWords() {
+  const { data } = await api.get<ApiResponse<BotProductWord[]>>(`${BASE}/bot/product-words`)
+  return Array.isArray(data.data) ? data.data : []
+}
+export async function addBotProductWord(alias: string, searchTerm: string) {
+  const { data } = await api.post<ApiResponse<BotProductWord>>(`${BASE}/bot/product-words`, { alias, searchTerm })
+  return data.data
+}
+export async function deleteBotProductWord(id: string) {
+  await api.delete(`${BASE}/bot/product-words/${id}`)
 }
 export async function getBotActivity() {
   const { data } = await api.get<ApiResponse<BotEvent[]>>(`${BASE}/bot/activity`, { params: { limit: 30 } })
