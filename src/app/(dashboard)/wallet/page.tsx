@@ -21,6 +21,8 @@ import {
   XCircle,
   CheckCircle2,
   AlertCircle,
+  Hourglass,
+  TimerOff,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton"
@@ -31,6 +33,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -67,6 +70,8 @@ function WalletContent() {
     userId: "",
     amount: 0,
     description: "",
+    isBonus: false,
+    expiryDays: "",
   })
   const [debitForm, setDebitForm] = useState({
     userId: "",
@@ -114,13 +119,21 @@ function WalletContent() {
         userId: creditUserMatch?.id ?? creditForm.userId,
         payload: {
           amount: creditForm.amount,
-          description: creditForm.description || "Admin credit",
+          description: creditForm.description || (creditForm.isBonus ? "Bonus credit" : "Admin credit"),
+          ...(creditForm.isBonus
+            ? {
+                isBonus: true,
+                ...(Number(creditForm.expiryDays) > 0
+                  ? { expiryDays: Math.floor(Number(creditForm.expiryDays)) }
+                  : {}),
+              }
+            : {}),
         },
       },
       {
         onSuccess: () => {
           setCreditOpen(false)
-          setCreditForm({ userId: "", amount: 0, description: "" })
+          setCreditForm({ userId: "", amount: 0, description: "", isBonus: false, expiryDays: "" })
         },
       }
     )
@@ -214,6 +227,48 @@ function WalletContent() {
         </Card>
       </div>
 
+      {/* Expiring bonus / cashback */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <CardContent className="p-0 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950">
+              <Hourglass className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Expiring balance</p>
+              <p className="text-lg font-bold text-amber-600">{formatINR(walletStats?.expiringBalance ?? 0)}</p>
+              <p className="text-[11px] text-muted-foreground">Bonus &amp; cashback that will lapse</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="p-4">
+          <CardContent className="p-0 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950">
+              <Clock className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Expiring in 7 days</p>
+              <p className="text-lg font-bold text-orange-600">{formatINR(walletStats?.expiringIn7Days ?? 0)}</p>
+              <p className="text-[11px] text-muted-foreground">Customers get a reminder before this</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="p-4">
+          <CardContent className="p-0 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-950">
+              <TimerOff className="h-5 w-5 text-rose-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Expired unused</p>
+              <p className="text-lg font-bold text-rose-600">{formatINR(walletStats?.totalExpired ?? 0)}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {formatINR(walletStats?.expiredLast30Days ?? 0)} in the last 30 days
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -301,6 +356,14 @@ function WalletContent() {
                       >
                         <RotateCcw className="h-3 w-3 mr-1" /> Refund
                       </Badge>
+                    ) : txn.subType === "EXPIRY" ? (
+                      <Badge
+                        variant="default"
+                        className="bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                        title="Bonus/cashback that was not used before its expiry date"
+                      >
+                        <TimerOff className="h-3 w-3 mr-1" /> Expired
+                      </Badge>
                     ) : txn.subType === "BONUS" ? (
                       <Badge
                         variant="default"
@@ -374,6 +437,18 @@ function WalletContent() {
                       {txn.type === "CREDIT" ? "+" : "-"}
                       {formatINR(txn.amount)}
                     </span>
+                    {txn.expiresAt && (
+                      <p
+                        className={`text-[10px] ${
+                          new Date(txn.expiresAt) <= new Date()
+                            ? "text-rose-600"
+                            : "text-amber-600"
+                        }`}
+                      >
+                        {new Date(txn.expiresAt) <= new Date() ? "Expired " : "Expires "}
+                        {new Date(txn.expiresAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell className="hidden md:table-cell max-w-[200px] truncate">
                     {txn.description || "—"}
@@ -481,6 +556,42 @@ function WalletContent() {
                 onChange={(e) => setCreditForm({ ...creditForm, description: e.target.value })}
                 rows={2}
               />
+            </div>
+            <div className="rounded-lg border px-3 py-2.5 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label htmlFor="isBonus" className="text-sm">Expiring bonus</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {creditForm.isBonus
+                      ? "Promotional credit — it expires if the customer doesn't use it in time."
+                      : "Plain money (refund / correction) — never expires."}
+                  </p>
+                </div>
+                <Switch
+                  id="isBonus"
+                  checked={creditForm.isBonus}
+                  onCheckedChange={(v) => setCreditForm({ ...creditForm, isBonus: v })}
+                />
+              </div>
+              {creditForm.isBonus && (
+                <div className="space-y-1">
+                  <Label htmlFor="expiryDays" className="text-xs">Valid for (days)</Label>
+                  <Input
+                    id="expiryDays"
+                    type="number"
+                    min={1}
+                    max={3650}
+                    step={1}
+                    placeholder="Default from Wallet Settings"
+                    value={creditForm.expiryDays}
+                    onChange={(e) => setCreditForm({ ...creditForm, expiryDays: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to use the &quot;Admin bonus&quot; validity in Settings → Wallet. Has no effect
+                    if expiry is switched off there.
+                  </p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreditOpen(false)}>

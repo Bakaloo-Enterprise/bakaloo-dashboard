@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -100,6 +101,8 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
   const [walletDialog, setWalletDialog] = useState(false)
   const [walletAmount, setWalletAmount] = useState("")
   const [walletDesc, setWalletDesc] = useState("")
+  const [walletIsBonus, setWalletIsBonus] = useState(false)
+  const [walletExpiryDays, setWalletExpiryDays] = useState("")
 
   const [walletDebitDialog, setWalletDebitDialog] = useState(false)
   const [walletDebitAmount, setWalletDebitAmount] = useState("")
@@ -112,12 +115,24 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
   const handleCreditWallet = () => {
     if (!customer || !walletAmount) return
     creditWallet.mutate(
-      { id: customer.id, amount: parseFloat(walletAmount), description: walletDesc || undefined },
+      {
+        id: customer.id,
+        amount: parseFloat(walletAmount),
+        description: walletDesc || undefined,
+        ...(walletIsBonus
+          ? {
+              isBonus: true,
+              ...(Number(walletExpiryDays) > 0 ? { expiryDays: Math.floor(Number(walletExpiryDays)) } : {}),
+            }
+          : {}),
+      },
       {
         onSuccess: () => {
           setWalletDialog(false)
           setWalletAmount("")
           setWalletDesc("")
+          setWalletIsBonus(false)
+          setWalletExpiryDays("")
         },
       }
     )
@@ -457,6 +472,32 @@ export function CustomerProfileDrawer({ customerId, open, onClose }: CustomerPro
                 placeholder="e.g. Refund for order #123"
                 maxLength={255}
               />
+            </div>
+            <div className="rounded-lg border px-3 py-2 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label>Expiring bonus</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {walletIsBonus
+                      ? "Promotional credit — expires if unused."
+                      : "Plain money (refund / correction) — never expires."}
+                  </p>
+                </div>
+                <Switch checked={walletIsBonus} onCheckedChange={setWalletIsBonus} />
+              </div>
+              {walletIsBonus && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Valid for (days)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={walletExpiryDays}
+                    onChange={(e) => setWalletExpiryDays(e.target.value)}
+                    placeholder="Default from Wallet Settings"
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

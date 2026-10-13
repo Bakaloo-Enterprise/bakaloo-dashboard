@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Save, Wallet, PowerOff } from "lucide-react"
+import { Loader2, Save, Wallet, PowerOff, Hourglass } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/shared/PageHeader"
@@ -89,6 +89,46 @@ function NumberField({
   )
 }
 
+function DaysField({
+  id,
+  label,
+  hint,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string
+  label: string
+  hint: string
+  value: number
+  onChange: (v: number) => void
+  disabled?: boolean
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={3650}
+          step="1"
+          disabled={disabled}
+          value={String(value)}
+          onChange={(e) => onChange(Math.max(0, Math.floor(numOrZero(e.target.value))))}
+          className="pr-14"
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+          days
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    </div>
+  )
+}
+
 export default function WalletSettingsPage() {
   const queryClient = useQueryClient()
   const { can } = usePermissions()
@@ -129,6 +169,17 @@ export default function WalletSettingsPage() {
     }
     if (draft.maxTransferAmount > draft.maxWalletBalance) {
       return "Maximum transfer amount cannot exceed the maximum wallet balance"
+    }
+    const dayFields = [
+      draft.expirySpinDays,
+      draft.expiryScratchDays,
+      draft.expiryCouponDays,
+      draft.expiryOfferDays,
+      draft.expiryAdminDays,
+      draft.expiryReminderDays,
+    ]
+    if (dayFields.some((d) => !Number.isInteger(d) || d < 0 || d > 3650)) {
+      return "Expiry days must be whole numbers between 0 and 3650"
     }
     return null
   }, [draft])
@@ -220,6 +271,105 @@ export default function WalletSettingsPage() {
               onCheckedChange={(v) => set("topupEnabled", v)}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl border-rose-200 dark:border-rose-900">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Hourglass className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+            <div>
+              <CardTitle className="text-lg">Cashback &amp; Bonus Expiry</CardTitle>
+              <CardDescription>
+                Make promotional wallet money expire if it isn&apos;t used in time.
+                Money a customer adds themselves (top-ups) and refunds never
+                expire — only the credit types below do, and each credit keeps
+                its own expiry date from the moment it is issued.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Expiry enabled</p>
+              <p className="text-xs text-muted-foreground">
+                Applies to credits issued from now on. Credits that already carry
+                an expiry date keep it, and money already in wallets today is never
+                expired retroactively. Customers see &quot;valid till &lt;date&gt;&quot;
+                on each credit and a transaction line when it expires.
+              </p>
+            </div>
+            <Switch
+              id="expiryEnabled"
+              checked={draft.expiryEnabled}
+              disabled={!canManage}
+              onCheckedChange={(v) => set("expiryEnabled", v)}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DaysField
+              id="expirySpinDays"
+              label="Spin & Win cash prize"
+              hint="0 = never expires."
+              value={draft.expirySpinDays}
+              onChange={(v) => set("expirySpinDays", v)}
+              disabled={!canManage || !draft.expiryEnabled}
+            />
+            <DaysField
+              id="expiryScratchDays"
+              label="Scratch Card cash prize"
+              hint="0 = never expires."
+              value={draft.expiryScratchDays}
+              onChange={(v) => set("expiryScratchDays", v)}
+              disabled={!canManage || !draft.expiryEnabled}
+            />
+            <DaysField
+              id="expiryCouponDays"
+              label="Coupon cashback"
+              hint="Cashback from a coupon, credited after the order."
+              value={draft.expiryCouponDays}
+              onChange={(v) => set("expiryCouponDays", v)}
+              disabled={!canManage || !draft.expiryEnabled}
+            />
+            <DaysField
+              id="expiryOfferDays"
+              label="Offer cashback"
+              hint="First-order, cart-milestone and payment-offer cashback."
+              value={draft.expiryOfferDays}
+              onChange={(v) => set("expiryOfferDays", v)}
+              disabled={!canManage || !draft.expiryEnabled}
+            />
+            <DaysField
+              id="expiryAdminDays"
+              label="Admin bonus (default)"
+              hint="Bonus credited from the dashboard with “Expiring bonus” on. Can be overridden per credit."
+              value={draft.expiryAdminDays}
+              onChange={(v) => set("expiryAdminDays", v)}
+              disabled={!canManage || !draft.expiryEnabled}
+            />
+            <DaysField
+              id="expiryReminderDays"
+              label="Reminder before expiry"
+              hint="Push notification this many days before a credit lapses. 0 = no reminder."
+              value={draft.expiryReminderDays}
+              onChange={(v) => set("expiryReminderDays", v)}
+              disabled={!canManage || !draft.expiryEnabled}
+            />
+          </div>
+
+          <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+            <li>
+              Expiring credit is spent first (soonest expiry first), then the
+              customer&apos;s own money.
+            </li>
+            <li>
+              A credit expires at the end of its last valid day (IST). Only the
+              unused part is removed, and the customer is notified.
+            </li>
+            <li>Expiring credit cannot be transferred to another customer.</li>
+          </ul>
         </CardContent>
       </Card>
 

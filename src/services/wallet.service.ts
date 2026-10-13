@@ -92,6 +92,15 @@ export async function getWalletOverviewStats(): Promise<WalletOverviewStats> {
     const { data } = await api.get<ApiResponse<WalletOverviewStats>>("/wallet/admin/stats")
     return data.data
   } catch {
-    return { totalBalance: 0, totalAdded: 0, totalUsed: 0, totalRefunded: 0 }
+    return {
+      totalBalance: 0,
+      totalAdded: 0,
+      totalUsed: 0,
+      totalRefunded: 0,
+      expiringBalance: 0,
+      expiringIn7Days: 0,
+      totalExpired: 0,
+      expiredLast30Days: 0,
+    }
   }
 }

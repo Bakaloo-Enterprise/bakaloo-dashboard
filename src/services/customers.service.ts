@@ -79,7 +79,7 @@ export async function toggleBlockCustomer(id: string, blocked: boolean) {
 /** Credit customer wallet */
 export async function creditCustomerWallet(
   id: string,
-  payload: { amount: number; description?: string }
+  payload: { amount: number; description?: string; isBonus?: boolean; expiryDays?: number }
 ) {
   const { data } = await api.post<ApiResponse<{ wallet_balance: number }>>(
     `/admin/customers/${id}/credit-wallet`,

@@ -158,11 +158,15 @@ export function useCreditWallet() {
       id,
       amount,
       description,
+      isBonus,
+      expiryDays,
     }: {
       id: string
       amount: number
       description?: string
-    }) => creditCustomerWallet(id, { amount, description }),
+      isBonus?: boolean
+      expiryDays?: number
+    }) => creditCustomerWallet(id, { amount, description, isBonus, expiryDays }),
     onSuccess: () => {
       toast.success("Wallet credited")
       // Also drop the standalone Wallet page's cache ("wallet") — a credit
