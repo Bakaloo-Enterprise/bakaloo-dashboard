@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import * as S from "@/services/business.service"
-import type { AdjustmentKind, AnalyticsFilters, BulkRowStatus, NewEntryInput, NewRequirementInput, PeriodQuery, ReceiveInput, DistributeInput, VendorInput, PayMethod, DocKind } from "@/types/business.types"
+import type { AdjustmentKind, AnalyticsFilters, BulkRowStatus, NewEntryInput, NewRequirementInput, PeriodQuery, ReceiveInput, DistributeInput, RepackInput, VendorInput, PayMethod, DocKind } from "@/types/business.types"
 
 export function bizError(err: unknown): string {
   const e = err as { response?: { data?: { message?: string } }; message?: string }
@@ -40,6 +40,11 @@ export function useProcurementMutations() {
     receive: useMutation({ mutationFn: (v: { id: string } & ReceiveInput) => { const { id, ...rest } = v; return S.receiveEntry(id, rest) }, onError: base.onError, onSuccess: () => { toast.success("Goods checked and saved"); refresh() } }),
     arrived: useMutation({ mutationFn: (v: { id: string; quantity: number }) => S.arrivedEntry(v.id, v.quantity), onError: base.onError, onSuccess: () => { toast.success("Delivery added"); refresh() } }),
     distribute: useMutation({ mutationFn: (v: { id: string } & DistributeInput) => { const { id, ...rest } = v; return S.distributeEntry(id, rest) }, onError: base.onError, onSuccess: () => { toast.success("Stock sent"); refresh() } }),
+    repack: useMutation({ mutationFn: (v: { id: string } & RepackInput) => { const { id, ...rest } = v; return S.repackEntry(id, rest) }, onError: base.onError, onSuccess: () => { toast.success("Packs made"); refresh() } }),
+    undoRepack: useMutation({ mutationFn: (id: string) => S.undoRepack(id), onError: base.onError, onSuccess: () => { toast.success("Repack undone"); refresh() } }),
+    packSize: useMutation({ mutationFn: (v: { productId: string; size: number; unit: "G" | "ML" }) => S.setPackSize(v.productId, v.size, v.unit), onError: base.onError, onSuccess: () => { toast.success("Size saved"); refresh() } }),
+    receiveTransfer: useMutation({ mutationFn: (v: { id: string; receivedQty: number; note?: string }) => S.receiveTransfer(v.id, v.receivedQty, v.note), onError: base.onError, onSuccess: () => { toast.success("Stock is on the shelf"); refresh() } }),
+    cancelTransfer: useMutation({ mutationFn: (id: string) => S.cancelTransfer(id), onError: base.onError, onSuccess: () => { toast.success("Transfer cancelled"); refresh() } }),
     allocate: useMutation({ mutationFn: (v: { id: string; allocations: Array<{ shopId: string; quantity: number }>; note?: string; updateCostPrice?: boolean }) => S.allocateEntry(v.id, v.allocations, { note: v.note, updateCostPrice: v.updateCostPrice }), onError: base.onError, onSuccess: () => { toast.success("Stock sent to the stores"); refresh() } }),
     adjust: useMutation({ mutationFn: ({ id, ...rest }: { id: string; kind: AdjustmentKind; quantity: number; reason: string; shopId?: string }) => S.adjustEntry(id, rest), onError: base.onError, onSuccess: () => { toast.success("Adjustment recorded"); refresh() } }),
     reserve: useMutation({ mutationFn: (v: { id: string; note: string }) => S.reserveEntry(v.id, v.note), ...base }),
@@ -60,6 +65,8 @@ export function useMonthMutations() {
     reopen: useMutation({ mutationFn: (v: { month: string; reason: string }) => S.reopenMonth(v.month, v.reason), onError, onSuccess: () => { toast.success("Month reopened"); refresh() } }),
   }
 }
+export const useRepack = (entryId: string | null) => useQuery({ queryKey: ["biz", "repack", entryId], queryFn: () => S.getRepack(entryId as string), enabled: Boolean(entryId), staleTime: 0, gcTime: 0 })
+export const useTransfers = (enabled = true) => useQuery({ queryKey: ["biz", "transfers"], queryFn: S.getTransfers, enabled, refetchInterval: 60_000 })
 export const usePayables = (enabled = true) => useQuery({ queryKey: ["biz", "payables"], queryFn: S.getPayables, enabled })
 export const useSupplierLedger = (id: string | null) => useQuery({ queryKey: ["biz", "ledger", id], queryFn: () => S.getSupplierLedger(id as string), enabled: Boolean(id) })
 

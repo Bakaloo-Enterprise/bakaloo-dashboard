@@ -2,7 +2,7 @@ import api from "@/lib/api"
 import type { ApiResponse } from "@/types/api.types"
 import type {
   AdjustmentKind, AnalyticsFilters, AvailabilityResult, BizMe, BulkBatch, BulkRowStatus, BulkRows, ChannelSplit, EntryList, NewEntryInput, Overview, PeriodQuery,
-  ProcurementDetail, MonthClosing, MonthlyPreview, DistributeInput, DistributionPreview, Payables, PayMethod, PurchasePlan, SupplierLedger, VendorInput, DocKind, ReceiveInput, Reconciliation, NewRequirementInput, Requirement, RequirementCustomer, RequirementList, RequirementPrefill, StorePerf, TopCustomers, TopProducts, Vendor, VendorReport,
+  ProcurementDetail, Transfer, RepackInput, RepackPreview, MonthClosing, MonthlyPreview, DistributeInput, DistributionPreview, Payables, PayMethod, PurchasePlan, SupplierLedger, VendorInput, DocKind, ReceiveInput, Reconciliation, NewRequirementInput, Requirement, RequirementCustomer, RequirementList, RequirementPrefill, StorePerf, TopCustomers, TopProducts, Vendor, VendorReport,
 } from "@/types/business.types"
 
 const get = async <T>(url: string, params?: object) => (await api.get<ApiResponse<T>>(`/admin${url}`, { params })).data.data
@@ -24,6 +24,13 @@ export const arrivedEntry = (id: string, quantity: number) => post<ProcurementDe
 export const getDistribution = (id: string) => get<DistributionPreview>(`/procurement/entries/${id}/distribution`)
 export const distributeEntry = (id: string, input: DistributeInput) => post<ProcurementDetail>(`/procurement/entries/${id}/distribute`, input)
 export const releaseHold = (id: string) => post<ProcurementDetail>(`/procurement/reservations/${id}/release`)
+export const getRepack = (id: string) => get<RepackPreview>(`/procurement/entries/${id}/repack`)
+export const repackEntry = (id: string, input: RepackInput) => post<ProcurementDetail>(`/procurement/entries/${id}/repack`, input)
+export const undoRepack = (id: string) => post<ProcurementDetail>(`/procurement/conversions/${id}/reverse`)
+export const setPackSize = async (productId: string, size: number, unit: "G" | "ML") => (await api.patch<ApiResponse<{ id: string; packSize: number; label: string }>>(`/admin/procurement/products/${productId}/pack-size`, { size, unit })).data.data
+export const getTransfers = () => get<Transfer[]>("/procurement/transfers")
+export const receiveTransfer = (id: string, receivedQty: number, note?: string) => post<ProcurementDetail>(`/procurement/transfers/${id}/receive`, clean({ receivedQty, note }))
+export const cancelTransfer = (id: string) => post<ProcurementDetail>(`/procurement/transfers/${id}/cancel`)
 export const adjustEntry = (id: string, input: { kind: AdjustmentKind; quantity: number; reason: string; shopId?: string }) => post<ProcurementDetail>(`/procurement/entries/${id}/adjustments`, clean(input))
 export const reserveEntry = (id: string, note: string) => post<ProcurementDetail>(`/procurement/entries/${id}/reserve`, { note })
 export const releaseEntry = (id: string) => post<ProcurementDetail>(`/procurement/entries/${id}/release`)
@@ -66,6 +73,7 @@ export const removeDocument = async (id: string) => (await api.delete<ApiRespons
 // B2B requirements + purchase plan
 export const getPlan = () => get<PurchasePlan>("/procurement/plan")
 export const getRequirements = (params: { status?: string; source?: string; search?: string; limit?: number; offset?: number }) => get<RequirementList>("/procurement/requirements", clean(params))
+export const getRequirement = (id: string) => get<Requirement>(`/procurement/requirements/${id}`)
 export const getRequirementCustomers = (search: string) => get<RequirementCustomer[]>("/procurement/requirements/customers", { search })
 export const getRequirementPrefill = (conversationId: string) => get<RequirementPrefill>("/procurement/requirements/prefill", { conversationId })
 export const createRequirement = (input: NewRequirementInput) => post<Requirement>("/procurement/requirements", clean(input))

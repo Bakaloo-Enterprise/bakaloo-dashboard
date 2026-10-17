@@ -90,6 +90,8 @@ export async function createManualOrder(payload: {
   items: { productId: string; quantity: number; /** B2B: the price agreed for one unit */ unitPrice?: number }[]
   /** B2C (default) = home customer. B2B = a business buying on credit. */
   orderType?: "B2C" | "B2B"
+  /** B2B: the customer request this order fulfils (it becomes Delivered with the order). */
+  requirementId?: string
   /** B2B: the date they promised to pay by (YYYY-MM-DD). */
   dueDate?: string
   /** B2B: money received while taking the order. */

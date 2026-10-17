@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,6 +17,7 @@ import {
   CreditCard,
   Tag,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,15 +35,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { CustomerPicker, type OrderKind } from "@/components/orders/CustomerPicker"
+import { CustomerPicker, type NewCustomerHint, type OrderKind } from "@/components/orders/CustomerPicker"
 import { B2BPaymentPanel, b2bPaymentProblem, type B2BPayment } from "@/components/orders/B2BPaymentPanel"
 import { useProducts } from "@/hooks/useProducts"
 import { useActiveShopsForSwitcher } from "@/hooks/useShops"
+import { getRequirement } from "@/services/business.service"
+import { getProductDetail } from "@/services/products.service"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useCreateManualOrder } from "@/hooks/useUploads"
 import { formatINR } from "@/lib/utils"
 import { usePermissions } from "@/hooks/usePermissions"
-import type { StaffCustomer } from "@/services/uploads.service"
+import { lookupOrderCustomers, type StaffCustomer } from "@/services/uploads.service"
 import type { Product } from "@/types/product.types"
 import type { DeliveryAddress } from "@/types/order.types"
 
@@ -79,6 +83,30 @@ export default function NewOrderPage() {
   const [orderType, setOrderType] = useState<OrderKind>("B2C")
   const isB2B = orderType === "B2B"
   const [b2b, setB2b] = useState<B2BPayment>({ dueDate: "", advance: "", method: "CASH" })
+  // Opened from a customer request ("Make order"): the products, prices and customer arrive filled in.
+  const [fromRequest, setFromRequest] = useState<{ id: string; no: number; name: string } | null>(null)
+  const [newHint, setNewHint] = useState<NewCustomerHint | null>(null)
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("request")
+    if (!id) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const rq = await getRequirement(id)
+        if (rq.status !== "CONFIRMED") { toast.error("That request is not marked “Sure” any more."); return }
+        const products = await Promise.all(rq.items.map((i) => getProductDetail(i.productId)))
+        if (cancelled) return
+        setOrderType("B2B")
+        setCart(rq.items.map((i, k) => ({ product: products[k] as unknown as Product, quantity: i.quantity, price: i.unitPrice !== null ? String(i.unitPrice) : "" })))
+        setFromRequest({ id: rq.id, no: rq.reqNo, name: rq.customerName })
+        const digits = (rq.customerPhone ?? "").replace(/\D/g, "").slice(-10)
+        const found = digits ? (await lookupOrderCustomers(digits)).find((c) => c.phone.replace(/\D/g, "").endsWith(digits)) : undefined
+        if (found) setSelectedCustomer(found)
+        else setNewHint({ name: rq.customerName, phone: digits, business: rq.business?.name ?? rq.customerName })
+      } catch { toast.error("Could not open that request.") }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   // Step 2: Products
   const [productSearch, setProductSearch] = useState("")
@@ -180,6 +208,7 @@ export default function NewOrderPage() {
           ...(isB2B && i.price ? { unitPrice: Number(i.price) } : {}),
         })),
         orderType,
+        ...(fromRequest && isB2B ? { requirementId: fromRequest.id } : {}),
         ...(isB2B
           ? {
               dueDate: b2b.dueDate || undefined,
@@ -246,7 +275,8 @@ export default function NewOrderPage() {
               <CardHeader className="p-0">
                 <CardTitle className="text-base">Who is the order for?</CardTitle>
               </CardHeader>
-              <CustomerPicker orderType={orderType} onOrderType={setOrderType} selected={selectedCustomer} onSelect={setSelectedCustomer} />
+              {fromRequest && <p className="flex items-center gap-2 rounded-xl border-2 border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-900"><ClipboardList className="h-5 w-5" aria-hidden />From request #{fromRequest.no} — {fromRequest.name}. The products and prices are already filled in.</p>}
+              <CustomerPicker orderType={orderType} onOrderType={setOrderType} selected={selectedCustomer} onSelect={setSelectedCustomer} initialNew={newHint} />
             </div>
           )}
 

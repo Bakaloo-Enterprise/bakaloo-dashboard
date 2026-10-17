@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { CalendarDays, CheckCircle2, ClipboardList, Lock, Search, Truck, XCircle } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { CalendarDays, CheckCircle2, ClipboardList, Lock, Receipt, Search, ShoppingBag, Truck, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,6 +18,8 @@ const FILTERS: Array<[ReqStatus | "", string]> = [["", "All"], ["CONFIRMED", "Su
 
 function Card({ r, canManage, today }: { r: Requirement; canManage: boolean; today: string }) {
   const { setStatus } = useRequirementMutations()
+  const router = useRouter()
+  const holds = r.items.some((i) => i.held > 0)
   const src = SOURCE_UI[r.source]
   const st = STATUS_UI[r.status]
   const pay = PAY_UI[r.paymentTerms]
@@ -45,9 +49,11 @@ function Card({ r, canManage, today }: { r: Requirement; canManage: boolean; tod
         {total > 0 && <span className="font-medium text-foreground">{formatRupees(total)}</span>}
       </div>
       {r.note && <p className="mt-2 rounded-lg bg-muted/50 px-2 py-1 text-xs">{r.note}</p>}
+      {r.order && <Link href="/b2b/orders" className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-indigo-300 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-800"><Receipt className="h-4 w-4" aria-hidden />Order {r.order.number}</Link>}
       {canManage && (r.status === "INQUIRY" || r.status === "CONFIRMED") && (
         <div className="mt-3 flex flex-wrap gap-2">
           {r.status === "INQUIRY" && <Button className="h-11 flex-1 bg-green-600 text-base hover:bg-green-700" disabled={busy} onClick={() => act("CONFIRMED")}><CheckCircle2 className="mr-1.5 h-5 w-5" aria-hidden />Sure</Button>}
+          {r.status === "CONFIRMED" && !holds && <Button className="h-11 flex-1 bg-indigo-600 text-base hover:bg-indigo-700" disabled={busy} onClick={() => router.push(`/orders/new?request=${r.id}`)}><ShoppingBag className="mr-1.5 h-5 w-5" aria-hidden />Make order</Button>}
           {r.status === "CONFIRMED" && <Button className="h-11 flex-1 bg-sky-600 text-base hover:bg-sky-700" disabled={busy} onClick={() => act("DELIVERED")}><Truck className="mr-1.5 h-5 w-5" aria-hidden />Delivered</Button>}
           <Button variant="outline" className="h-11 border-red-300 text-red-700 hover:bg-red-50" disabled={busy} onClick={() => act("CANCELLED")} aria-label="Cancel this request"><XCircle className="mr-1.5 h-5 w-5" aria-hidden />Cancel</Button>
         </div>

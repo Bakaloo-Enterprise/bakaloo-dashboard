@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Clock, ClipboardList, FileSpreadsheet, Lock, PackageCheck, Send, Plus, Scale, Search, ShoppingCart, Truck, Users } from "lucide-react"
+import { Boxes, Clock, ClipboardList, FileSpreadsheet, Lock, PackageCheck, Send, Plus, Scale, Search, ShoppingCart, Truck, Users } from "lucide-react"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Forbidden } from "@/components/shared/forbidden"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { NewRequirementDialog } from "@/components/business/NewRequirementDialog"
 import { PurchasePlan } from "@/components/business/PurchasePlan"
 import { RequirementsList } from "@/components/business/RequirementsList"
+import { TransfersPanel } from "@/components/business/TransfersPanel"
+import { RepackDialog } from "@/components/business/RepackDialog"
 import { DistributeDialog } from "@/components/business/DistributeDialog"
 import { MonthlyReport } from "@/components/business/MonthlyReport"
 import { InvoiceButton } from "@/components/business/InvoiceButton"
@@ -38,6 +40,7 @@ export default function ProcurementPage() {
   const [creating, setCreating] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [receiving, setReceiving] = useState<import("@/types/business.types").ProcurementEntry | null>(null)
+  const [repacking, setRepacking] = useState<import("@/types/business.types").ProcurementEntry | null>(null)
   const [sending, setSending] = useState<import("@/types/business.types").ProcurementEntry | null>(null)
   const [chatId, setChatId] = useState<string | null>(null)
   const [reportVendor, setReportVendor] = useState("")
@@ -81,6 +84,7 @@ export default function ProcurementPage() {
 
       {tab === "purchases" && (
         <>
+          <TransfersPanel />
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
@@ -116,6 +120,11 @@ export default function ProcurementPage() {
                         {e.status === "ACTIVE" && e.purpose === "RETAIL" && e.available > 0 && (
                           <button type="button" disabled={!manage} onClick={() => setSending(e)} className="mt-1 flex items-center gap-1.5 rounded-full border-2 border-sky-400 bg-sky-50 px-3 py-1.5 text-sm font-bold text-sky-900 hover:bg-sky-100"><Send className="h-4 w-4" aria-hidden />Send {e.available}</button>
                         )}
+                        {e.status === "ACTIVE" && e.purpose === "RETAIL" && e.available > 0 && (
+                          <button type="button" disabled={!manage} onClick={() => setRepacking(e)} className="mt-1 flex items-center gap-1.5 rounded-full border-2 border-emerald-400 bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-900 hover:bg-emerald-100"><Boxes className="h-4 w-4" aria-hidden />Make packs</button>
+                        )}
+                        {e.inTransit > 0 && <span className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-700"><Truck className="h-3 w-3" aria-hidden />{e.inTransit} on the way to stores</span>}
+                        {e.converted > 0 && <span className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-700"><Boxes className="h-3 w-3" aria-hidden />{e.converted} made into packs</span>}
                         {e.reserved > 0 && <span className="mt-1 flex items-center gap-1 text-xs font-semibold text-violet-700"><Lock className="h-3 w-3" aria-hidden />{e.reserved} kept for customers</span>}
                       </td>
                       <td className="p-2">{e.status !== "CANCELLED" && <InvoiceButton entryId={e.id} hasInvoice={e.invoiceCount > 0} canUpload={manage} compact />}</td>
@@ -137,6 +146,7 @@ export default function ProcurementPage() {
       )}
       {tab === "reconciliation" && (recon.isError ? <p role="alert" className="text-sm text-red-600">Could not load the reconciliation.</p> : <ReconciliationTable data={recon.data} loading={recon.isLoading} />)}
 
+      <RepackDialog entry={repacking} onOpenChange={(o) => !o && setRepacking(null)} />
       <DistributeDialog entry={sending} onOpenChange={(o) => !o && setSending(null)} />
       <ReceiveDialog entry={receiving} onOpenChange={(o) => !o && setReceiving(null)} />
       <NewRequirementDialog open={requesting} onOpenChange={setRequesting} conversationId={chatId} />

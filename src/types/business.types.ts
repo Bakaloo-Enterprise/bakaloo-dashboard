@@ -34,11 +34,12 @@ export interface ProcurementEntry {
   invoiceRef: string | null; invoiceCount: number; receivingNote: string | null; status: "ORDERED" | "ACTIVE" | "CANCELLED"; purpose: "RETAIL" | "B2B_RESERVED"; owedQty: number; receivedAt: string | null
   destination: { id: string; name: string } | null
   reservedFor: { businessAccountId: string | null; businessName: string | null; note: string | null } | null
-  createdAt: string; reserved: number; usable: number; shortage: number; allocated: number; centralAdjusted: number; available: number; purchaseTotal: number; unitPrice: number
+  createdAt: string; inTransit: number; reserved: number; converted: number; packSize: number | null; packUnit: "G" | "ML" | null; usable: number; shortage: number; allocated: number; centralAdjusted: number; available: number; purchaseTotal: number; unitPrice: number
 }
 export interface ProcurementDetail extends ProcurementEntry {
   allocations: Array<{ id: string; shopId: string; shopName: string; quantity: number; status: "APPLIED" | "REVERSED"; note: string | null; at: string; reversedAt: string | null }>
   adjustments: Array<{ id: string; kind: AdjustmentKind; label: string; quantity: number; shopId: string | null; shopName: string | null; reason: string; by: string | null; at: string; value: number; loss: boolean }>
+  conversions: Array<{ id: string; unitsUsed: number; gramsUsed: number; gramsPacked: number; gramsLost: number; status: "APPLIED" | "REVERSED"; note: string | null; at: string; reversedAt: string | null; by: string | null; lines: Array<{ shopName: string; productName: string; packs: number; packSize: number; unitCost: number }> }>
   documents: Array<{ id: string; kind: DocKind; fileName: string; mime: string; size: number; at: string }>
   history: Array<{ kind: string; detail: Record<string, unknown>; by: string | null; at: string }>
 }
@@ -105,7 +106,7 @@ export type ReqStatus = "INQUIRY" | "CONFIRMED" | "DELIVERED" | "CANCELLED"
 export type PayTerms = "COD" | "UPI" | "ADVANCE_PAID" | "CREDIT" | "PARTIAL"
 export interface Requirement {
   id: string; reqNo: number; customerName: string; customerPhone: string | null; business: { id: string; name: string } | null
-  conversationId: string | null; source: ReqSource; sourceLabel: string; status: ReqStatus; deliveryDate: string | null; paymentTerms: PayTerms
+  conversationId: string | null; order: { id: string; number: string } | null; source: ReqSource; sourceLabel: string; status: ReqStatus; deliveryDate: string | null; paymentTerms: PayTerms
   note: string | null; createdAt: string; createdBy: string | null
   items: Array<{ productId: string; name: string; unit: string | null; imageUrl: string | null; quantity: number; unitPrice: number | null; held: number }>
   history?: Array<{ kind: string; detail: Record<string, unknown>; by: string | null; at: string }>
@@ -138,7 +139,8 @@ export interface DistributionPreview {
   }
   note: string
 }
-export interface DistributeInput { reservations: Array<{ requirementId: string; quantity: number }>; allocations: Array<{ shopId: string; quantity: number }>; note?: string }
+export interface DistributeInput { reservations: Array<{ requirementId: string; quantity: number }>; allocations: Array<{ shopId: string; quantity: number }>; note?: string; /** true = sent "on the way": not on the shelf until the store confirms */ inTransit?: boolean }
+export interface Transfer { id: string; quantity: number; sentAt: string; note: string | null; entryId: string; entryNo: number; product: string; vendor: string; shop: string; by: string | null }
 
 export interface MonthClosing {
   state: "RUNNING" | "OPEN" | "CLOSED"; month: string; closedAt?: string; closedBy?: string | null; note?: string | null
@@ -167,3 +169,12 @@ export interface MonthlyPreview {
   counts: { purchases: number; payments: number; losses: number; collections: number; receivables: number }
   definitions: Array<{ term: string; text: string }>
 }
+
+export interface RepackTarget { productId: string; name: string; optionLabel: string | null; imageUrl: string | null; packSize: number | null; packUnit: "G" | "ML" | null; label: string | null; cost: number | null }
+export interface RepackHistory { id: string; unitsUsed: number; gramsUsed: number; gramsPacked: number; gramsLost: number; status: "APPLIED" | "REVERSED"; at: string; by: string | null; lines: Array<{ shopName: string; productName: string; packs: number; packSize: number; unitCost: number }> }
+export interface RepackPreview {
+  entry: { id: string; entryNo: number; product: { id: string; name: string }; vendor: string; price: number; dedicatedShopId: string | null }
+  available: number; unitSize: number | null; unit: "G" | "ML" | null; unitLabel: string | null; familyId: string | null; blocked: string | null; costPerGram: number | null
+  targets: RepackTarget[]; history: RepackHistory[]
+}
+export interface RepackInput { unitsUsed: number; lines: Array<{ shopId: string; productId: string; packs: number }>; note?: string }

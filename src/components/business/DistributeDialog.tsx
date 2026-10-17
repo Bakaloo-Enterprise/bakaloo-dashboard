@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AlertTriangle, Handshake, Lock, Send, Store, Wand2, Warehouse } from "lucide-react"
+import { AlertTriangle, Handshake, Lock, PackageCheck, Send, Store, Truck, Wand2, Warehouse } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -24,6 +24,7 @@ export function DistributeDialog({ entry, onOpenChange }: { entry: ProcurementEn
   const preview = useDistribution(entry?.id ?? null)
   const { distribute } = useProcurementMutations()
   const [plan, setPlan] = useState<Plan>({ res: {}, alloc: {} })
+  const [onTheWay, setOnTheWay] = useState(false)
   const p = preview.data
   useEffect(() => { if (p) setPlan(fromSuggestion(p)) }, [p])
   if (!entry) return null
@@ -37,7 +38,7 @@ export function DistributeDialog({ entry, onOpenChange }: { entry: ProcurementEn
   const send = () => {
     if (!p || left < 0 || reserved + sent === 0) return
     distribute.mutate(
-      { id: entry.id, reservations: Object.entries(plan.res).filter(([, q]) => q > 0).map(([requirementId, quantity]) => ({ requirementId, quantity })), allocations: Object.entries(plan.alloc).filter(([, q]) => q > 0).map(([shopId, quantity]) => ({ shopId, quantity })) },
+      { id: entry.id, reservations: Object.entries(plan.res).filter(([, q]) => q > 0).map(([requirementId, quantity]) => ({ requirementId, quantity })), allocations: Object.entries(plan.alloc).filter(([, q]) => q > 0).map(([shopId, quantity]) => ({ shopId, quantity })), ...(onTheWay && sent > 0 ? { inTransit: true } : {}) },
       { onSuccess: () => onOpenChange(false) },
     )
   }
@@ -104,9 +105,19 @@ export function DistributeDialog({ entry, onOpenChange }: { entry: ProcurementEn
             <div className="flex items-center gap-3 rounded-xl border-2 bg-muted/40 p-3"><Warehouse className="h-6 w-6 text-slate-600" aria-hidden /><div className="flex-1"><p className="font-semibold">Stays in the warehouse</p><p className="text-xs text-muted-foreground">Not sent anywhere yet</p></div><span className={cn("text-2xl font-extrabold tabular-nums", left < 0 && "text-red-700")}>{left}</span></div>
             {left < 0 && <p role="alert" className="text-sm font-semibold text-red-700">That is {-left} more than you have. Lower a number.</p>}
 
+            {sent > 0 && (
+              <div className="grid grid-cols-2 gap-3" role="group" aria-label="When can the stores sell it?">
+                {([[false, "Arrives now", "Stores can sell it straight away", PackageCheck], [true, "On the way", "Store confirms when it arrives", Truck]] as const).map(([v, label, hint, Icon]) => (
+                  <button key={label} type="button" aria-pressed={onTheWay === v} onClick={() => setOnTheWay(v)} className={cn("flex items-center gap-3 rounded-2xl border-2 p-3 text-left", onTheWay === v ? "border-primary bg-primary/10 ring-2 ring-primary/30" : "hover:bg-muted")}>
+                    <Icon className="h-8 w-8 shrink-0" aria-hidden /><span><span className="block text-base font-bold">{label}</span><span className="text-xs text-muted-foreground">{hint}</span></span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-3">
               <Button type="button" variant="outline" className="h-14 border-2" onClick={() => setPlan(fromSuggestion(p))}><Wand2 className="mr-1.5 h-5 w-5" aria-hidden />Reset</Button>
-              <Button type="button" className="col-span-2 h-14 bg-green-600 text-lg font-bold hover:bg-green-700" disabled={left < 0 || reserved + sent === 0 || distribute.isPending} onClick={send}><Send className="mr-2 h-6 w-6" aria-hidden />Send</Button>
+              <Button type="button" className="col-span-2 h-14 bg-green-600 text-lg font-bold hover:bg-green-700" disabled={left < 0 || reserved + sent === 0 || distribute.isPending} onClick={send}><Send className="mr-2 h-6 w-6" aria-hidden />{onTheWay && sent > 0 ? "Send — on the way" : "Send"}</Button>
             </div>
             <details className="text-xs text-muted-foreground"><summary className="cursor-pointer select-none">How is this suggested?</summary><p className="mt-1">{p.note}</p></details>
           </div>

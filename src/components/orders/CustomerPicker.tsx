@@ -46,10 +46,14 @@ function Row({ c, onClick }: { c: StaffCustomer; onClick?: () => void }) {
  * Step 1 of Create Order: is it a home customer or a business, then find them — or add them if they are not on the
  * platform yet. Everything is a big tile with a picture and a label.
  */
-export function CustomerPicker({ orderType, onOrderType, selected, onSelect }: { orderType: OrderKind; onOrderType: (k: OrderKind) => void; selected: StaffCustomer | null; onSelect: (c: StaffCustomer | null) => void }) {
+export type NewCustomerHint = { name: string; phone: string; business?: string }
+
+export function CustomerPicker({ orderType, onOrderType, selected, onSelect, initialNew }: { orderType: OrderKind; onOrderType: (k: OrderKind) => void; selected: StaffCustomer | null; onSelect: (c: StaffCustomer | null) => void; initialNew?: NewCustomerHint | null }) {
   const [search, setSearch] = useState("")
   const q = useDebounce(search, 300)
   const [adding, setAdding] = useState(false)
+  // Opened from a customer request whose person is not on the platform yet: start with the form filled in.
+  useEffect(() => { if (initialNew && !selected) setAdding(true) }, [initialNew]) // eslint-disable-line react-hooks/exhaustive-deps
   const list = useQuery({ queryKey: ["order-customers", q], queryFn: () => lookupOrderCustomers(q), staleTime: 15_000, enabled: !selected })
 
   return (
@@ -72,7 +76,7 @@ export function CustomerPicker({ orderType, onOrderType, selected, onSelect }: {
           {orderType === "B2C" && selected.kind === "BUSINESS" && <p className="mt-2 rounded-lg bg-white/70 px-2 py-1 text-xs">This is a business. Switch to “Business” above to bill them on credit.</p>}
         </div>
       ) : adding ? (
-        <NewCustomerForm kind={orderType === "B2B" ? "BUSINESS" : "HOME"} onCancel={() => setAdding(false)} onDone={(c) => { setAdding(false); onSelect(c) }} />
+        <NewCustomerForm kind={orderType === "B2B" ? "BUSINESS" : "HOME"} hint={initialNew ?? null} onCancel={() => setAdding(false)} onDone={(c) => { setAdding(false); onSelect(c) }} />
       ) : (
         <>
           <div className="relative">
@@ -93,10 +97,10 @@ export function CustomerPicker({ orderType, onOrderType, selected, onSelect }: {
   )
 }
 
-function NewCustomerForm({ kind, onCancel, onDone }: { kind: "HOME" | "BUSINESS"; onCancel: () => void; onDone: (c: StaffCustomer) => void }) {
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [business, setBusiness] = useState("")
+function NewCustomerForm({ kind, hint, onCancel, onDone }: { kind: "HOME" | "BUSINESS"; hint: NewCustomerHint | null; onCancel: () => void; onDone: (c: StaffCustomer) => void }) {
+  const [name, setName] = useState(hint?.name ?? "")
+  const [phone, setPhone] = useState(hint?.phone ?? "")
+  const [business, setBusiness] = useState(hint?.business ?? "")
   const [gstin, setGstin] = useState("")
   const [type, setType] = useState(kind)
   useEffect(() => setType(kind), [kind])
