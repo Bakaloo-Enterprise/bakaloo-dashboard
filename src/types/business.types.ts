@@ -140,6 +140,10 @@ export interface DistributionPreview {
 }
 export interface DistributeInput { reservations: Array<{ requirementId: string; quantity: number }>; allocations: Array<{ shopId: string; quantity: number }>; note?: string }
 
+export interface MonthClosing {
+  state: "RUNNING" | "OPEN" | "CLOSED"; month: string; closedAt?: string; closedBy?: string | null; note?: string | null
+  canClose: boolean; canReopen: boolean; reasons: string[]; blockers: string[]
+}
 export interface MonthlyPreview {
   window: { month: string; label: string; from: string; to: string; asOf: string; inProgress: boolean }
   summary: {
@@ -148,7 +152,16 @@ export interface MonthlyPreview {
     loss: { wastage: number; recovered: number; units: number }
     b2b: { billed: number; collected: number; cash: number; upi: number; razorpay: number; other: number; outstanding: number; overdue: number }
     moneyIn: { b2b: number; cod: number; codOrders: number; gateway: number; gatewayPayments: number; total: number }
+    profit: { sales: number; cogs: number; gross: number; marginPct: number | null; loss: number; afterLoss: number; unpricedSupplyUnits: number; channel: Record<"B2B" | "B2C", { sales: number; cogs: number; gross: number; marginPct: number | null }> }
+    stock: {
+      openingValue: number; closingValue: number; warehouseOpening: number; warehouseClosing: number; totalOpening: number; totalClosing: number; basis: "CLOSED_MONTH" | "ESTIMATED"
+      rollForward: { opening: number; goodsReceived: number; otherAdded: number; costOfGoodsSold: number; wastageAndLoss: number; sentBackToSuppliers: number; movedBetweenWarehouseAndShelves: number; unexplained: number; closing: number; expectedClosing: number; difference: number }
+    }
   }
+  closed: { month: string; at: string; by: string | null; note: string | null } | null
+  closing: MonthClosing
+  history: Array<{ month: string; action: "CLOSED" | "REOPENED"; note: string | null; created_at: string; actor_name: string | null }>
+  topProducts: Array<{ name: string; sales: number; gross: number; marginPct: number | null }>
   agingTotals: Array<{ bucket: string; orders: number; amount: number }>
   exceptions: Array<{ code: string; level: "bad" | "warn" | "info"; text: string; count: number }>
   counts: { purchases: number; payments: number; losses: number; collections: number; receivables: number }

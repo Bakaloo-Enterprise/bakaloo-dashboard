@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Banknote, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileSpreadsheet, HandCoins, Info, Loader2, ShoppingCart, Trash2, Undo2 } from "lucide-react"
+import { AlertTriangle, Banknote, Boxes, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileSpreadsheet, HandCoins, Info, Loader2, ShoppingCart, Trash2, TrendingDown, TrendingUp, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,6 +10,7 @@ import { bizError } from "@/hooks/useBusiness"
 import { downloadMonthly } from "@/services/business.service"
 import { cn } from "@/lib/utils"
 import { formatRupees, istToday } from "./business-helpers"
+import { MonthClosingCard } from "./MonthClosingCard"
 
 const shiftMonth = (m: string, n: number) => {
   const [y, mo] = m.split("-").map(Number)
@@ -58,6 +59,40 @@ export function MonthlyReport() {
 
       {r.isLoading || !s || !d ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div> : r.isError ? <p role="alert" className="text-sm text-red-600">Could not load the report.</p> : (
         <>
+          <MonthClosingCard report={d} />
+
+          <section aria-label="Profit" className={cn("rounded-2xl border-2 p-4", s.profit.gross >= 0 ? "border-green-400 bg-green-50 text-green-900" : "border-red-400 bg-red-50 text-red-900")}>
+            <div className="flex items-center gap-2">{s.profit.gross >= 0 ? <TrendingUp className="h-7 w-7" aria-hidden /> : <TrendingDown className="h-7 w-7" aria-hidden />}<span className="text-base font-bold">Profit on what we sold</span></div>
+            <p className="mt-1 text-3xl font-extrabold tabular-nums">{formatRupees(s.profit.gross)}{s.profit.marginPct !== null && <span className="ml-2 text-lg font-bold">{s.profit.marginPct}%</span>}</p>
+            <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
+              <div><dt className="text-xs">Sold for</dt><dd className="font-bold tabular-nums">{formatRupees(s.profit.sales)}</dd></div>
+              <div><dt className="text-xs">It cost us</dt><dd className="font-bold tabular-nums">{formatRupees(s.profit.cogs)}</dd></div>
+              <div><dt className="text-xs">Thrown away / lost</dt><dd className="font-bold tabular-nums">−{formatRupees(s.profit.loss)}</dd></div>
+              <div><dt className="text-xs">Left after losses</dt><dd className="font-bold tabular-nums">{formatRupees(s.profit.afterLoss)}</dd></div>
+            </dl>
+            <ul className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+              {(["B2C", "B2B"] as const).map((k) => <li key={k} className="rounded-full bg-white px-3 py-1">{k === "B2C" ? "Home customers" : "Businesses"}: {formatRupees(s.profit.channel[k].gross)}{s.profit.channel[k].marginPct !== null ? ` (${s.profit.channel[k].marginPct}%)` : ""}</li>)}
+            </ul>
+            {d.topProducts.length > 0 && (
+              <ul className="mt-3 space-y-1" aria-label="Best selling products">
+                {d.topProducts.map((p) => <li key={p.name} className="flex items-center gap-2 text-sm"><span className="min-w-0 flex-1 truncate font-medium">{p.name}</span><span className="tabular-nums">{formatRupees(p.sales)}</span><span className={cn("w-14 text-right text-xs font-bold", (p.marginPct ?? 0) < 0 ? "text-red-700" : "")}>{p.marginPct === null ? "—" : `${p.marginPct}%`}</span></li>)}
+              </ul>
+            )}
+            <p className="mt-2 text-xs">Before delivery cost, store commission, payment fees, GST and running costs — those are not recorded here.{s.profit.unpricedSupplyUnits > 0 ? ` ${s.profit.unpricedSupplyUnits} units went to businesses with no price agreed.` : ""}</p>
+          </section>
+
+          <section aria-label="Stock value" className="rounded-2xl border-2 border-violet-300 bg-violet-50 p-4 text-violet-900">
+            <div className="flex items-center gap-2"><Boxes className="h-7 w-7" aria-hidden /><span className="text-base font-bold">Stock we are holding (at cost)</span>
+              {s.stock.basis === "ESTIMATED" && <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-900">Opening is estimated</span>}</div>
+            <p className="mt-1 text-3xl font-extrabold tabular-nums">{formatRupees(s.stock.totalClosing)}</p>
+            <ul className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+              <li className="rounded-full bg-white px-3 py-1">On shelves {formatRupees(s.stock.closingValue)}</li>
+              <li className="rounded-full bg-white px-3 py-1">In the warehouse {formatRupees(s.stock.warehouseClosing)}</li>
+              <li className="rounded-full bg-white px-3 py-1">At the start {formatRupees(s.stock.totalOpening)}</li>
+            </ul>
+            {Math.abs(s.stock.rollForward.difference) > 1 && <p role="alert" className="mt-2 text-sm font-bold text-red-700">The stock value does not add up (off by {formatRupees(s.stock.rollForward.difference)}).</p>}
+          </section>
+
           <div className="rounded-2xl border-2 border-green-400 bg-green-50 p-4 text-green-900">
             <div className="flex items-center gap-2"><Banknote className="h-7 w-7" aria-hidden /><span className="text-base font-bold">All money really received</span></div>
             <p className="mt-1 text-3xl font-extrabold tabular-nums">{formatRupees(s.moneyIn.total)}</p>
@@ -112,7 +147,7 @@ export function MonthlyReport() {
               <ul className="space-y-2">{d.exceptions.map((e) => { const l = LEVEL[e.level]; return <li key={e.code} className={cn("flex items-center gap-3 rounded-xl border-2 p-3 text-sm font-semibold", l.tone)}><l.icon className="h-6 w-6 shrink-0" aria-hidden />{e.text}</li> })}</ul>
             )}
           </section>
-          <p className="text-xs text-muted-foreground">The Excel file has every row behind these numbers: purchases, supplier accounts, payments, wastage, B2B billed, collections and who owes us.</p>
+          <p className="text-xs text-muted-foreground">The Excel file has every row behind these numbers: profit and margin by product and store, stock value, purchases, supplier accounts, payments, wastage, B2B billed, collections and who owes us.</p>
           <details className="text-xs text-muted-foreground"><summary className="cursor-pointer select-none">How are these numbers worked out?</summary>
             <dl className="mt-2 space-y-1.5">{d.definitions.map((x) => <div key={x.term}><dt className="font-bold text-foreground">{x.term}</dt><dd>{x.text}</dd></div>)}</dl>
           </details>

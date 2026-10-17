@@ -51,6 +51,15 @@ export function useProcurementMutations() {
 
 export const useDistribution = (entryId: string | null) => useQuery({ queryKey: ["biz", "distribution", entryId], queryFn: () => S.getDistribution(entryId as string), enabled: Boolean(entryId), staleTime: 0, gcTime: 0 })
 export const useMonthly = (month: string, enabled = true) => useQuery({ queryKey: ["biz", "monthly", month], queryFn: () => S.getMonthly(month), enabled, placeholderData: (p) => p })
+export function useMonthMutations() {
+  const qc = useQueryClient()
+  const onError = (e: unknown) => toast.error(bizError(e))
+  const refresh = () => qc.invalidateQueries({ queryKey: ["biz"] })
+  return {
+    close: useMutation({ mutationFn: (v: { month: string; note?: string }) => S.closeMonth(v.month, v.note), onError, onSuccess: () => { toast.success("Month closed"); refresh() } }),
+    reopen: useMutation({ mutationFn: (v: { month: string; reason: string }) => S.reopenMonth(v.month, v.reason), onError, onSuccess: () => { toast.success("Month reopened"); refresh() } }),
+  }
+}
 export const usePayables = (enabled = true) => useQuery({ queryKey: ["biz", "payables"], queryFn: S.getPayables, enabled })
 export const useSupplierLedger = (id: string | null) => useQuery({ queryKey: ["biz", "ledger", id], queryFn: () => S.getSupplierLedger(id as string), enabled: Boolean(id) })
 

@@ -2,7 +2,7 @@ import api from "@/lib/api"
 import type { ApiResponse } from "@/types/api.types"
 import type {
   AdjustmentKind, AnalyticsFilters, AvailabilityResult, BizMe, BulkBatch, BulkRowStatus, BulkRows, ChannelSplit, EntryList, NewEntryInput, Overview, PeriodQuery,
-  ProcurementDetail, MonthlyPreview, DistributeInput, DistributionPreview, Payables, PayMethod, PurchasePlan, SupplierLedger, VendorInput, DocKind, ReceiveInput, Reconciliation, NewRequirementInput, Requirement, RequirementCustomer, RequirementList, RequirementPrefill, StorePerf, TopCustomers, TopProducts, Vendor, VendorReport,
+  ProcurementDetail, MonthClosing, MonthlyPreview, DistributeInput, DistributionPreview, Payables, PayMethod, PurchasePlan, SupplierLedger, VendorInput, DocKind, ReceiveInput, Reconciliation, NewRequirementInput, Requirement, RequirementCustomer, RequirementList, RequirementPrefill, StorePerf, TopCustomers, TopProducts, Vendor, VendorReport,
 } from "@/types/business.types"
 
 const get = async <T>(url: string, params?: object) => (await api.get<ApiResponse<T>>(`/admin${url}`, { params })).data.data
@@ -41,6 +41,9 @@ export async function downloadMonthly(month: string) {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+export const closeMonth = (month: string, note?: string) => post<MonthClosing>("/procurement/reports/monthly/close", clean({ month, note }))
+export const reopenMonth = (month: string, reason: string) => post<MonthClosing>("/procurement/reports/monthly/reopen", { month, reason })
 
 // supplier money + papers
 export const getPayables = () => get<Payables>("/procurement/payables")
