@@ -87,13 +87,50 @@ export async function bulkImportProducts(file: File) {
 /** Create manual order (admin places order for a customer) */
 export async function createManualOrder(payload: {
   userId: string
-  items: { productId: string; quantity: number }[]
+  items: { productId: string; quantity: number; /** B2B: the price agreed for one unit */ unitPrice?: number }[]
+  /** B2C (default) = home customer. B2B = a business buying on credit. */
+  orderType?: "B2C" | "B2B"
+  /** B2B: the date they promised to pay by (YYYY-MM-DD). */
+  dueDate?: string
+  /** B2B: money received while taking the order. */
+  advance?: { amount: number; method: "CASH" | "UPI" }
   paymentMethod?: "COD" | "MANUAL"
+  /** The store that delivers the order. Leave out only when one store is the obvious choice. */
+  shopId?: string
+  /** MANUAL only: the money is already in hand. Otherwise the order starts unpaid. */
+  paymentReceived?: boolean
   deliveryAddress?: Record<string, unknown>
   couponCode?: string
 }) {
   const { data } = await api.post<
     ApiResponse<{ id: string; order_number: string; total_amount: number }>
   >("/admin/orders/manual", payload)
+  return data.data
+}
+
+/** A customer as the Create Order screen shows them: with the labels staff need. */
+export interface StaffCustomer {
+  id: string
+  name: string | null
+  phone: string
+  orderCount: number
+  kind: "BUSINESS" | "HOME"
+  businessName: string | null
+  gstin: string | null
+  hasBusinessAccount: boolean
+  addedByStaff: boolean
+  /** Added by staff and has never opened the app. */
+  notOnApp: boolean
+  existing?: boolean
+}
+
+export async function lookupOrderCustomers(search: string) {
+  const { data } = await api.get<ApiResponse<StaffCustomer[]>>("/admin/orders/customers/lookup", { params: { search } })
+  return data.data
+}
+
+/** Add a customer who is not on the platform yet. A phone number that already has an account returns that account. */
+export async function addOrderCustomer(input: { name: string; phone: string; kind: "HOME" | "BUSINESS"; businessName?: string; gstin?: string }) {
+  const { data } = await api.post<ApiResponse<StaffCustomer>>("/admin/orders/customers", input)
   return data.data
 }

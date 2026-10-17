@@ -79,6 +79,7 @@ import {
   useOrderNotes,
   useAddOrderNote,
   useResyncPayment,
+  useMarkManualPaid,
   useRazorpayDetails,
 } from "@/hooks/useOrders"
 import { useCustomerDetail } from "@/hooks/useCustomers"
@@ -121,6 +122,7 @@ export function OrderDetailDrawer({ orderId, open, onClose }: OrderDetailDrawerP
   const refundOrder = useRefundOrder()
   const cancelOrder = useCancelOrder()
   const resyncPayment = useResyncPayment()
+  const markManualPaid = useMarkManualPaid()
   const [showRazorpayDetails, setShowRazorpayDetails] = useState(false)
   const {
     data: razorpayDetails,
@@ -694,6 +696,15 @@ export function OrderDetailDrawer({ orderId, open, onClose }: OrderDetailDrawerP
                         <Separator />
                         <Row label="Total" value={formatINR(order.total_amount)} className="font-bold text-base text-foreground" />
                       </>
+                    )}
+                    {order.payment_method === "MANUAL" && order.payment_status === "PENDING" && order.status !== "CANCELLED" && (
+                      <div className="mt-2 flex items-center gap-3 rounded-lg border-2 border-amber-300 bg-amber-50 p-3">
+                        <CreditCard className="h-5 w-5 shrink-0 text-amber-700" aria-hidden />
+                        <p className="flex-1 text-sm font-semibold text-amber-900">Money not received yet</p>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={markManualPaid.isPending} onClick={() => markManualPaid.mutate({ orderId: order.id })}>
+                          Money received
+                        </Button>
+                      </div>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
                       {order.payment?.status && `Razorpay: ${order.payment.status}`}

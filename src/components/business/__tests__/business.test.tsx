@@ -41,7 +41,7 @@ const wrap = (ui: ReactNode) => render(<QueryClientProvider client={new QueryCli
 const entry = (o: Partial<ProcurementDetail> = {}): ProcurementDetail => ({
   id: "e1", entryNo: 7, product: { id: "p1", name: "Tomato", sku: "TOM" }, vendor: { id: "v1", name: "Vendor A" }, unit: "1 kg", expectedQty: 10, receivedQty: 10, damagedQty: 0, procuredOn: "2026-10-02",
   invoiceRef: null, receivingNote: null, status: "ACTIVE", purpose: "RETAIL", destination: null, reservedFor: null, createdAt: "", usable: 10, shortage: 0, allocated: 0, centralAdjusted: 0, available: 10,
-  purchaseTotal: 280, unitPrice: 28, allocations: [], adjustments: [], history: [], ...o,
+  invoiceCount: 0, documents: [], reserved: 0, owedQty: 0, receivedAt: null, purchaseTotal: 280, unitPrice: 28, allocations: [], adjustments: [], history: [], ...o,
 })
 
 describe("period helpers", () => {

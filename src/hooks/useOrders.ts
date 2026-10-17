@@ -17,6 +17,7 @@ import {
   downloadPackingSlip,
   downloadTaxInvoice,
   resyncOrderPayment,
+  markManualOrderPaid,
   getRazorpayDetails,
   bulkReconcilePayments,
   getB2BOrders,
@@ -266,6 +267,18 @@ export function useResyncPayment() {
       qc.invalidateQueries({ queryKey: ["orders"] })
     },
     onError: (e: Error) => toast.error(e.message || "Re-check failed"),
+  })
+}
+
+export function useMarkManualPaid() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { orderId: string; note?: string }) => markManualOrderPaid(v.orderId, v.note),
+    onSuccess: () => {
+      toast.success("Marked as paid")
+      qc.invalidateQueries({ queryKey: ["orders"] })
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not mark as paid"),
   })
 }
 

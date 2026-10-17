@@ -32,21 +32,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { useCustomers } from "@/hooks/useCustomers"
+import { CustomerPicker, type OrderKind } from "@/components/orders/CustomerPicker"
+import { B2BPaymentPanel, b2bPaymentProblem, type B2BPayment } from "@/components/orders/B2BPaymentPanel"
 import { useProducts } from "@/hooks/useProducts"
+import { useActiveShopsForSwitcher } from "@/hooks/useShops"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useCreateManualOrder } from "@/hooks/useUploads"
 import { formatINR } from "@/lib/utils"
 import { usePermissions } from "@/hooks/usePermissions"
-import type { Customer } from "@/types/customer.types"
+import type { StaffCustomer } from "@/services/uploads.service"
 import type { Product } from "@/types/product.types"
 import type { DeliveryAddress } from "@/types/order.types"
 
 interface CartItem {
   product: Product
   quantity: number
+  /** B2B only: the price agreed with the customer for one unit ("" = the standard business price). */
+  price?: string
 }
 
 const STEPS = [
@@ -71,9 +74,11 @@ export default function NewOrderPage() {
   }, [canManageOrders, router])
 
   // Step 1: Customer
-  const [customerSearch, setCustomerSearch] = useState("")
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const debouncedCustomerSearch = useDebounce(customerSearch, 400)
+  const [selectedCustomer, setSelectedCustomer] = useState<StaffCustomer | null>(null)
+  // Home customer (B2C) or a business buying on credit (B2B).
+  const [orderType, setOrderType] = useState<OrderKind>("B2C")
+  const isB2B = orderType === "B2B"
+  const [b2b, setB2b] = useState<B2BPayment>({ dueDate: "", advance: "", method: "CASH" })
 
   // Step 2: Products
   const [productSearch, setProductSearch] = useState("")
@@ -90,15 +95,15 @@ export default function NewOrderPage() {
 
   // Step 4: Payment
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "MANUAL">("MANUAL")
+  // Which store delivers it (its stock is used) and whether the money is already in hand.
+  const [shopId, setShopId] = useState("")
+  const [paymentReceived, setPaymentReceived] = useState(false)
+  const shops = useActiveShopsForSwitcher()
 
   // Step 5: Coupon
   const [couponCode, setCouponCode] = useState("")
 
   // Queries
-  const { data: customersData } = useCustomers({
-    search: debouncedCustomerSearch || undefined,
-    limit: 10,
-  })
   const { data: productsData } = useProducts({
     search: debouncedProductSearch || undefined,
     limit: 10,
@@ -106,13 +111,19 @@ export default function NewOrderPage() {
 
   const createOrder = useCreateManualOrder()
 
-  const customers = customersData?.customers ?? []
   const products = productsData?.products ?? []
 
-  const cartTotal = cart.reduce(
-    (sum, item) => sum + (item.product.sale_price ?? item.product.price ?? 0) * item.quantity,
-    0
-  )
+  // What one unit costs: a business pays its agreed price, else the wholesale price, else the list price; a home customer the sale price.
+  // (The store's own price can differ a little; the saved order uses the store's price and shows the exact total.)
+  const unitPriceOf = (item: CartItem) => {
+    if (isB2B) {
+      const agreed = item.price !== undefined && item.price !== "" ? Number(item.price) : NaN
+      return Number.isFinite(agreed) ? agreed : item.product.wholesale_price ?? item.product.price ?? 0
+    }
+    return item.product.sale_price ?? item.product.price ?? 0
+  }
+  const cartTotal = cart.reduce((sum, item) => sum + unitPriceOf(item) * item.quantity, 0)
+  const setLinePrice = (productId: string, price: string) => setCart((prev) => prev.map((i) => (i.product.id === productId ? { ...i, price: price.replace(/[^\d.]/g, "") } : i)))
 
   const addToCart = useCallback((product: Product) => {
     setCart((prev) => {
@@ -151,7 +162,7 @@ export default function NewOrderPage() {
       case 0: return !!selectedCustomer
       case 1: return cart.length > 0
       case 2: return !!address.city && !!address.pincode
-      case 3: return true
+      case 3: return !isB2B || !b2bPaymentProblem(b2b, cartTotal)
       case 4: return true
       case 5: return true
       default: return false
@@ -166,14 +177,22 @@ export default function NewOrderPage() {
         items: cart.map((i) => ({
           productId: i.product.id,
           quantity: i.quantity,
+          ...(isB2B && i.price ? { unitPrice: Number(i.price) } : {}),
         })),
-        paymentMethod,
+        orderType,
+        ...(isB2B
+          ? {
+              dueDate: b2b.dueDate || undefined,
+              advance: Number(b2b.advance) > 0 ? { amount: Number(b2b.advance), method: b2b.method } : undefined,
+            }
+          : { paymentMethod, paymentReceived: paymentMethod === "MANUAL" ? paymentReceived : undefined }),
+        shopId: shopId || undefined,
         deliveryAddress: address as unknown as Record<string, unknown>,
-        couponCode: couponCode || undefined,
+        couponCode: !isB2B ? couponCode || undefined : undefined,
       },
       {
         onSuccess: () => {
-          router.push("/orders")
+          router.push(isB2B ? "/b2b/orders" : "/orders")
         },
       }
     )
@@ -221,72 +240,13 @@ export default function NewOrderPage() {
       {/* Step Content */}
       <Card>
         <CardContent className="pt-6">
-          {/* Step 1: Select Customer */}
+          {/* Step 1: Home customer or business, then find them — or add them if they are not on the platform yet */}
           {step === 0 && (
             <div className="space-y-4">
               <CardHeader className="p-0">
-                <CardTitle className="text-base">Select Customer</CardTitle>
+                <CardTitle className="text-base">Who is the order for?</CardTitle>
               </CardHeader>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  aria-label="Search customers"
-                  placeholder="Search by name or phone..."
-                  className="pl-9"
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                />
-              </div>
-              {selectedCustomer && (
-                <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <User className="h-5 w-5 text-green-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {selectedCustomer.name || "Unnamed"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedCustomer.phone} · {selectedCustomer.order_count} orders
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedCustomer(null)}
-                  >
-                    Change
-                  </Button>
-                </div>
-              )}
-              {!selectedCustomer && customers.length > 0 && (
-                <ScrollArea className="max-h-[320px]">
-                  <div className="space-y-1">
-                    {customers.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setSelectedCustomer(c)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted text-left transition-colors"
-                      >
-                        <div className="h-9 w-9 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 font-semibold text-sm">
-                          {(c.name || "?")[0].toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {c.name || "Unnamed Customer"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {c.phone} · {c.order_count} orders · {formatINR(c.total_spent)} spent
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-              {!selectedCustomer && debouncedCustomerSearch && customers.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No customers found for &ldquo;{debouncedCustomerSearch}&rdquo;
-                </p>
-              )}
+              <CustomerPicker orderType={orderType} onOrderType={setOrderType} selected={selectedCustomer} onSelect={setSelectedCustomer} />
             </div>
           )}
 
@@ -319,7 +279,7 @@ export default function NewOrderPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{p.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatINR(p.sale_price ?? p.price ?? 0)} · Stock: {p.stock_quantity}
+                          {formatINR(p.sale_price ?? p.price ?? 0)} · All stores: {p.stock_quantity}
                         </p>
                       </div>
                       <Plus className="h-4 w-4 text-brand-500 flex-shrink-0" />
@@ -372,13 +332,21 @@ export default function NewOrderPage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right text-sm">
-                            {formatINR(item.product.sale_price ?? item.product.price ?? 0)}
+                            {isB2B ? (
+                              <Input
+                                aria-label={`Agreed price for ${item.product.name}`}
+                                className="ml-auto h-8 w-24 text-right"
+                                inputMode="decimal"
+                                placeholder={String(item.product.wholesale_price ?? item.product.price ?? 0)}
+                                value={item.price ?? ""}
+                                onChange={(e) => setLinePrice(item.product.id, e.target.value)}
+                              />
+                            ) : (
+                              formatINR(unitPriceOf(item))
+                            )}
                           </TableCell>
                           <TableCell className="text-right text-sm font-semibold">
-                            {formatINR(
-                              (item.product.sale_price ?? item.product.price ?? 0) *
-                              item.quantity
-                            )}
+                            {formatINR(unitPriceOf(item) * item.quantity)}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -400,6 +368,7 @@ export default function NewOrderPage() {
                     </span>
                     <span className="text-lg font-bold">{formatINR(cartTotal)}</span>
                   </div>
+                  {isB2B && <p className="text-xs text-muted-foreground">Business prices: type the price you agreed, or leave it empty for the standard business price.</p>}
                 </>
               )}
 
@@ -469,6 +438,10 @@ export default function NewOrderPage() {
               <CardHeader className="p-0">
                 <CardTitle className="text-base">Payment Method</CardTitle>
               </CardHeader>
+              {isB2B ? (
+                <B2BPaymentPanel value={b2b} onChange={setB2b} total={cartTotal} />
+              ) : (
+                <>
               <RadioGroup
                 value={paymentMethod}
                 onValueChange={(v) => setPaymentMethod(v as "COD" | "MANUAL")}
@@ -488,11 +461,33 @@ export default function NewOrderPage() {
                   <Label htmlFor="manual" className="cursor-pointer flex-1">
                     <p className="font-medium">Manual Payment</p>
                     <p className="text-xs text-muted-foreground">
-                      Payment collected manually (cash/UPI/card at counter)
+                      Staff collect the money themselves (cash / UPI / card)
                     </p>
                   </Label>
                 </div>
               </RadioGroup>
+
+              {paymentMethod === "MANUAL" && (
+                <label className="flex items-center gap-3 rounded-lg border-2 border-green-300 bg-green-50 p-4 cursor-pointer">
+                  <input type="checkbox" className="h-5 w-5" checked={paymentReceived} onChange={(e) => setPaymentReceived(e.target.checked)} />
+                  <span>
+                    <span className="block font-medium">Money already received</span>
+                    <span className="block text-xs text-muted-foreground">Leave this off if you have not been paid yet. You can mark it paid later from the order.</span>
+                  </span>
+                </label>
+              )}
+
+                </>
+              )}
+
+              <div className="space-y-1.5 rounded-lg border p-4">
+                <Label htmlFor="shop-pick" className="font-medium">Which store delivers this order?</Label>
+                <select id="shop-pick" className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={shopId} onChange={(e) => setShopId(e.target.value)}>
+                  <option value="">Choose for me (only if one store has everything)</option>
+                  {(shops.data?.items ?? []).map((sh) => <option key={sh.id} value={sh.id}>{sh.name}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">The stock is taken from this store, exactly like an app order.</p>
+              </div>
             </div>
           )}
 
@@ -502,7 +497,8 @@ export default function NewOrderPage() {
               <CardHeader className="p-0">
                 <CardTitle className="text-base">Apply Coupon (Optional)</CardTitle>
               </CardHeader>
-              <div className="flex items-center gap-2">
+              {isB2B && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-900">Coupons are not used for business orders. You can skip this step.</p>}
+              <div className={isB2B ? "hidden" : "flex items-center gap-2"}>
                 <Input
                   placeholder="Enter coupon code..."
                   value={couponCode}
@@ -537,7 +533,8 @@ export default function NewOrderPage() {
                 <User className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">
-                    {selectedCustomer?.name || "Unnamed"}
+                    {selectedCustomer?.businessName || selectedCustomer?.name || "Unnamed"}
+                    {selectedCustomer?.notOnApp && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">Not on the app yet</span>}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {selectedCustomer?.phone}
@@ -556,10 +553,7 @@ export default function NewOrderPage() {
                       {item.product.name} × {item.quantity}
                     </span>
                     <span className="font-medium">
-                      {formatINR(
-                        (item.product.sale_price ?? item.product.price ?? 0) *
-                        item.quantity
-                      )}
+                      {formatINR(unitPriceOf(item) * item.quantity)}
                     </span>
                   </div>
                 ))}
@@ -587,8 +581,10 @@ export default function NewOrderPage() {
 
               {/* Payment + Coupon */}
               <div className="flex items-center gap-4 text-sm">
-                <Badge variant="outline">
-                  {paymentMethod === "COD" ? "Cash on Delivery" : "Manual Payment"}
+                <Badge variant={isB2B ? "default" : "outline"}>
+                  {isB2B
+                    ? `Business order — pay later${b2b.dueDate ? ` by ${b2b.dueDate}` : ""}${Number(b2b.advance) > 0 ? ` · ${formatINR(Number(b2b.advance))} ${b2b.method === "UPI" ? "UPI" : "cash"} received` : ""}`
+                    : paymentMethod === "COD" ? "Cash on Delivery" : paymentReceived ? "Manual Payment — received" : "Manual Payment — not received yet"}
                 </Badge>
                 {couponCode && (
                   <Badge variant="secondary">

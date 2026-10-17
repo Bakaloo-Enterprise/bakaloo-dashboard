@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { MessageCircle } from "lucide-react"
+import { ClipboardList, MessageCircle } from "lucide-react"
+import Link from "next/link"
+import { useBizMe } from "@/hooks/useBusiness"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
@@ -57,6 +59,7 @@ export default function WhatsappInboxPage() {
   }, [])
 
   const crm = useCrmStatus()
+  const biz = useBizMe()
   const list = useConversations({ search: debouncedSearch || undefined, status, assignedTo: owner || undefined, labelId: labelId || undefined, limit: 50 })
   const detail = useConversation(selectedId)
   const messages = useMessages(selectedId)
@@ -175,6 +178,11 @@ export default function WhatsappInboxPage() {
               headerExtra={
                 <>
                   <BotStateControl conversation={active} botEnabled={Boolean(crm.data?.botEnabled)} canControl={canReply} />
+                  {Boolean(biz.data?.procurementManage) && (
+                    <Link href={`/procurement?chat=${active.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-md border-2 border-green-600 px-3 text-sm font-semibold text-green-700 hover:bg-green-50" title="Write down what this customer wants to buy">
+                      <ClipboardList className="h-4 w-4" aria-hidden />Customer request
+                    </Link>
+                  )}
                   <AssignControl conversation={active} meId={me.data?.userId} canAssign={canAssign} canReply={canReply} />
                 </>
               }

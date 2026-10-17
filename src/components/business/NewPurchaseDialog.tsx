@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { PackageCheck, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -32,12 +33,13 @@ export function NewPurchaseDialog({ open, onOpenChange, onCreated }: { open: boo
   const [invoice, setInvoice] = useState("")
   const [note, setNote] = useState("")
   const [dest, setDest] = useState("")
+  const [onTheWay, setOnTheWay] = useState(false)
   const [b2b, setB2b] = useState(false)
   const [reserveNote, setReserveNote] = useState("")
 
   const exp = Number(expected)
-  const rec = received === "" ? exp : Number(received)
-  const dmg = Number(damaged || 0)
+  const rec = onTheWay || received === "" ? exp : Number(received)
+  const dmg = onTheWay ? 0 : Number(damaged || 0)
   const unit = Number(price)
   const total = Number.isFinite(rec * unit) ? Math.round(rec * unit * 100) / 100 : 0
   const problems: string[] = []
@@ -53,7 +55,7 @@ export function NewPurchaseDialog({ open, onOpenChange, onCreated }: { open: boo
     if (problems.length || !product) return
     m.createEntry.mutate(
       {
-        productId: product.id, ...(vendorId && vendorId !== NEW_VENDOR ? { vendorId } : { vendorName: vendorName.trim() }), expectedQty: exp, receivedQty: rec, damagedQty: dmg, unitPrice: unit, procuredOn: on,
+        productId: product.id, ...(vendorId && vendorId !== NEW_VENDOR ? { vendorId } : { vendorName: vendorName.trim() }), expectedQty: exp, ...(onTheWay ? { ordered: true } : { receivedQty: rec, damagedQty: dmg }), unitPrice: unit, procuredOn: on,
         invoiceRef: invoice.trim() || undefined, receivingNote: note.trim() || undefined, destinationShopId: !b2b && dest ? dest : undefined, ...(b2b ? { purpose: "B2B_RESERVED" as const, reservationNote: reserveNote.trim() } : {}),
       },
       { onSuccess: (e) => { onOpenChange(false); onCreated(e.id) } },
@@ -67,6 +69,13 @@ export function NewPurchaseDialog({ open, onOpenChange, onCreated }: { open: boo
           <DialogTitle>New purchase</DialogTitle>
           <DialogDescription>Record stock you bought. After receiving it you decide which store gets how much.</DialogDescription>
         </DialogHeader>
+        <div className="grid grid-cols-2 gap-3" role="group" aria-label="Have the goods arrived?">
+          {([[false, "Already here", "Goods are with us", PackageCheck], [true, "On the way", "Ordered, not arrived", Truck]] as const).map(([v, label, hint, Icon]) => (
+            <button key={label} type="button" aria-pressed={onTheWay === v} onClick={() => setOnTheWay(v)} className={`flex items-center gap-3 rounded-2xl border-2 p-3 text-left ${onTheWay === v ? "border-primary bg-primary/10 ring-2 ring-primary/30" : "hover:bg-muted"}`}>
+              <Icon className="h-8 w-8 shrink-0" aria-hidden /><span><span className="block text-base font-bold">{label}</span><span className="text-xs text-muted-foreground">{hint}</span></span>
+            </button>
+          ))}
+        </div>
         <div className="grid gap-3 text-sm md:grid-cols-2">
           <div className="md:col-span-2">
             <label htmlFor="pp-search" className="text-xs text-muted-foreground">Product</label>
@@ -100,8 +109,8 @@ export function NewPurchaseDialog({ open, onOpenChange, onCreated }: { open: boo
             <Input id="pp-date" type="date" max={istToday()} value={on} onChange={(e) => setOn(e.target.value)} />
           </div>
           <div><label htmlFor="pp-exp" className="text-xs text-muted-foreground">Quantity ordered</label><Input id="pp-exp" inputMode="numeric" value={expected} onChange={(e) => setExpected(e.target.value)} /></div>
-          <div><label htmlFor="pp-rec" className="text-xs text-muted-foreground">Quantity received (blank = same)</label><Input id="pp-rec" inputMode="numeric" value={received} onChange={(e) => setReceived(e.target.value)} /></div>
-          <div><label htmlFor="pp-dmg" className="text-xs text-muted-foreground">Damaged on arrival</label><Input id="pp-dmg" inputMode="numeric" value={damaged} onChange={(e) => setDamaged(e.target.value)} /></div>
+          {!onTheWay && <div><label htmlFor="pp-rec" className="text-xs text-muted-foreground">Quantity received (blank = same)</label><Input id="pp-rec" inputMode="numeric" value={received} onChange={(e) => setReceived(e.target.value)} /></div>}
+          {!onTheWay && <div><label htmlFor="pp-dmg" className="text-xs text-muted-foreground">Damaged on arrival</label><Input id="pp-dmg" inputMode="numeric" value={damaged} onChange={(e) => setDamaged(e.target.value)} /></div>}
           <div><label htmlFor="pp-price" className="text-xs text-muted-foreground">Purchase price per unit (₹)</label><Input id="pp-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
           <p className="md:col-span-2" role="status">
             Purchase total: <strong>{formatRupees(total)}</strong>

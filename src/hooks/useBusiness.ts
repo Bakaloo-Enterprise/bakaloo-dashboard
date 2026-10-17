@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import * as S from "@/services/business.service"
-import type { AdjustmentKind, AnalyticsFilters, BulkRowStatus, NewEntryInput, PeriodQuery } from "@/types/business.types"
+import type { AdjustmentKind, AnalyticsFilters, BulkRowStatus, NewEntryInput, NewRequirementInput, PeriodQuery, ReceiveInput, DistributeInput, VendorInput, PayMethod, DocKind } from "@/types/business.types"
 
 export function bizError(err: unknown): string {
   const e = err as { response?: { data?: { message?: string } }; message?: string }
@@ -32,14 +32,40 @@ export function useProcurementMutations() {
   const base = { onError: (e: unknown) => toast.error(bizError(e)), onSuccess: refresh }
   return {
     createVendor: useMutation({ mutationFn: S.createVendor, ...base }),
-    updateVendor: useMutation({ mutationFn: ({ id, ...rest }: { id: string; isActive?: boolean; name?: string }) => S.updateVendor(id, rest), ...base }),
+    updateVendor: useMutation({ mutationFn: ({ id, ...rest }: { id: string } & VendorInput) => S.updateVendor(id, rest), ...base }),
+    pay: useMutation({ mutationFn: (v: { id: string; amount: number; method: PayMethod; reference?: string }) => { const { id, ...rest } = v; return S.paySupplier(id, rest) }, onError: base.onError, onSuccess: () => { toast.success("Payment saved"); refresh() } }),
+    voidPayment: useMutation({ mutationFn: (v: { id: string; reason: string }) => S.voidSupplierPayment(v.id, v.reason), onError: base.onError, onSuccess: () => { toast.success("Payment cancelled"); refresh() } }),
+    upload: useMutation({ mutationFn: (v: { entryId: string; file: File; kind?: DocKind }) => S.uploadEntryDocument(v.entryId, v.file, v.kind), onError: base.onError, onSuccess: () => { toast.success("Invoice saved"); refresh() } }),
     createEntry: useMutation({ mutationFn: (v: NewEntryInput) => S.createEntry(v), onError: base.onError, onSuccess: () => { toast.success("Purchase recorded"); refresh() } }),
+    receive: useMutation({ mutationFn: (v: { id: string } & ReceiveInput) => { const { id, ...rest } = v; return S.receiveEntry(id, rest) }, onError: base.onError, onSuccess: () => { toast.success("Goods checked and saved"); refresh() } }),
+    arrived: useMutation({ mutationFn: (v: { id: string; quantity: number }) => S.arrivedEntry(v.id, v.quantity), onError: base.onError, onSuccess: () => { toast.success("Delivery added"); refresh() } }),
+    distribute: useMutation({ mutationFn: (v: { id: string } & DistributeInput) => { const { id, ...rest } = v; return S.distributeEntry(id, rest) }, onError: base.onError, onSuccess: () => { toast.success("Stock sent"); refresh() } }),
     allocate: useMutation({ mutationFn: (v: { id: string; allocations: Array<{ shopId: string; quantity: number }>; note?: string; updateCostPrice?: boolean }) => S.allocateEntry(v.id, v.allocations, { note: v.note, updateCostPrice: v.updateCostPrice }), onError: base.onError, onSuccess: () => { toast.success("Stock sent to the stores"); refresh() } }),
     adjust: useMutation({ mutationFn: ({ id, ...rest }: { id: string; kind: AdjustmentKind; quantity: number; reason: string; shopId?: string }) => S.adjustEntry(id, rest), onError: base.onError, onSuccess: () => { toast.success("Adjustment recorded"); refresh() } }),
     reserve: useMutation({ mutationFn: (v: { id: string; note: string }) => S.reserveEntry(v.id, v.note), ...base }),
     release: useMutation({ mutationFn: (id: string) => S.releaseEntry(id), ...base }),
     cancel: useMutation({ mutationFn: (id: string) => S.cancelEntry(id), ...base }),
     reverse: useMutation({ mutationFn: (allocationId: string) => S.reverseAllocation(allocationId), ...base }),
+  }
+}
+
+export const useDistribution = (entryId: string | null) => useQuery({ queryKey: ["biz", "distribution", entryId], queryFn: () => S.getDistribution(entryId as string), enabled: Boolean(entryId), staleTime: 0, gcTime: 0 })
+export const useMonthly = (month: string, enabled = true) => useQuery({ queryKey: ["biz", "monthly", month], queryFn: () => S.getMonthly(month), enabled, placeholderData: (p) => p })
+export const usePayables = (enabled = true) => useQuery({ queryKey: ["biz", "payables"], queryFn: S.getPayables, enabled })
+export const useSupplierLedger = (id: string | null) => useQuery({ queryKey: ["biz", "ledger", id], queryFn: () => S.getSupplierLedger(id as string), enabled: Boolean(id) })
+
+// B2B requirements + purchase plan
+export const usePlan = (enabled = true) => useQuery({ queryKey: ["biz", "plan"], queryFn: S.getPlan, enabled, refetchInterval: 60_000 })
+export const useRequirements = (params: Parameters<typeof S.getRequirements>[0], enabled = true) => useQuery({ queryKey: ["biz", "requirements", params], queryFn: () => S.getRequirements(params), enabled, placeholderData: (p) => p })
+export const useRequirementCustomers = (search: string, enabled = true) => useQuery({ queryKey: ["biz", "req-customers", search], queryFn: () => S.getRequirementCustomers(search), enabled, staleTime: 15_000 })
+export const useRequirementPrefill = (conversationId: string | null) => useQuery({ queryKey: ["biz", "req-prefill", conversationId], queryFn: () => S.getRequirementPrefill(conversationId as string), enabled: Boolean(conversationId), retry: false })
+export function useRequirementMutations() {
+  const qc = useQueryClient()
+  const refresh = () => qc.invalidateQueries({ queryKey: ["biz"] })
+  const onError = (e: unknown) => toast.error(bizError(e))
+  return {
+    create: useMutation({ mutationFn: (v: NewRequirementInput) => S.createRequirement(v), onError, onSuccess: () => { toast.success("Saved"); refresh() } }),
+    setStatus: useMutation({ mutationFn: (v: { id: string; status: string }) => S.setRequirementStatus(v.id, v.status), onError, onSuccess: refresh }),
   }
 }
 

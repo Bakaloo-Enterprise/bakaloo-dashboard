@@ -164,6 +164,12 @@ export async function resyncOrderPayment(orderId: string) {
   return data.data
 }
 
+/** A manual order was created unpaid; say the money has now arrived. */
+export async function markManualOrderPaid(orderId: string, note?: string) {
+  const { data } = await api.post<ApiResponse<{ id: string }>>(`/admin/orders/${orderId}/payment-received`, { note })
+  return data.data
+}
+
 /** Historical audit tool — select a batch of old orders (e.g. everything
  *  filtered to payment status FAILED) and re-verify each directly against
  *  Razorpay, recovering any that were actually captured. */
