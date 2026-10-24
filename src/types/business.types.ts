@@ -18,7 +18,7 @@ export interface VendorInput {
   name?: string; phone?: string; notes?: string; isActive?: boolean; tradeName?: string; gstin?: string; address?: string; contactPerson?: string
   paymentTerms?: VendorTerms; creditDays?: number; upiId?: string; bankName?: string; bankAccountNo?: string; bankIfsc?: string
 }
-export interface PayableRow { vendorId: string; name: string; phone: string | null; paymentTerms: VendorTerms; creditDays: number; isActive: boolean; owed: number; overdue: number; nextDue: string | null; unpaidBills: number; onTheWay: { count: number; value: number } | null }
+export interface PayableRow { vendorId: string; name: string; phone: string | null; paymentTerms: VendorTerms; creditDays: number; isActive: boolean; owed: number; overdue: number; nextDue: string | null; unpaidBills: number; onTheWay: { count: number; value: number } | null; usually: string[]; lastBoughtOn: string | null }
 export interface Payables { totalOwed: number; totalOverdue: number; vendors: PayableRow[]; note: string }
 export interface SupplierBill { entryId: string; entryNo: number; product: string; procuredOn: string; total: number; credit: number; bill: number; paid: number; left: number; dueOn: string; overdue: boolean; status: "PAID" | "PART" | "UNPAID"; invoiceRef: string | null; hasInvoice: boolean }
 export interface SupplierPayment { id: string; amount: number; method: PayMethod; paidOn: string; reference: string | null; note: string | null; by: string | null; at: string; voided: boolean; voidReason: string | null }
@@ -118,9 +118,12 @@ export interface NewRequirementInput {
 }
 export interface RequirementCustomer { id: string; company_name: string; contact_name: string | null; phone: string | null }
 export interface RequirementPrefill { conversationId: string; customerName: string; customerPhone: string; businessAccountId: string | null; source: ReqSource }
+/** A supplier we usually buy this product from, with what the latest purchase cost. */
+export interface PlanVendor { vendorId: string; name: string; price: number | null; lastOn: string; times: number }
 export interface PlanItem {
   productId: string; name: string; unit: string | null; imageUrl: string | null; firstDue: string | null; appOrders: number; confirmed: number
-  storeStock: number; centralStock: number; incoming: number; lastPrice: number | null; lastVendor: string | null
+  storeStock: number; centralStock: number; incoming: number; lastPrice: number | null; lastVendor: string | null; lastVendorId: string | null
+  vendors: PlanVendor[]
   committed: number; projected: number; shopLow: number; have: number; need: number; toBuy: number; status: "BUY" | "WATCH" | "OK"
 }
 export interface PurchasePlan { items: PlanItem[]; totals: { toBuyProducts: number; committedProducts: number; inquiryProducts: number }; note: string }

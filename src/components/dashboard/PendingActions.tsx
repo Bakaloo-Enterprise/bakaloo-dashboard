@@ -13,9 +13,9 @@ import {
 const ACTIONS = [
   {
     key: "pendingOrders" as const,
-    label: "Pending Orders",
+    label: "New Orders to Accept",
     icon: ClipboardList,
-    href: "/orders?status=PENDING",
+    href: "/orders?status=CONFIRMED",
     color: "#F59E0B",
     bg: "#FFFBEB",
   },

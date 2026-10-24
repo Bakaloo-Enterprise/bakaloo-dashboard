@@ -20,6 +20,7 @@ import {
   CreditCard,
   FileSpreadsheet,
   FileText,
+  Flame,
   Gift,
   History,
   Image,
@@ -35,6 +36,7 @@ import {
   MapPin,
   MapPinned,
   Package,
+  Radar,
   PackageCheck,
   Palette,
   Receipt,
@@ -98,6 +100,8 @@ type NavItem = {
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Activity,
+  Flame,
+  Radar,
   Code2,
   BarChart3,
   Bell,
@@ -268,6 +272,17 @@ const NAV_SECTIONS: Array<{ section: string; items: NavItem[] }> = [
       { label: "Business Analytics", href: "/business-analytics", icon: "BarChart3" },
       { label: "Procurement", href: "/procurement", icon: "Truck" },
       { label: "Bulk Catalog", href: "/catalog-bulk", icon: "FileSpreadsheet" },
+    ],
+  },
+  {
+    section: "OPERATIONS ERP",
+    items: [
+      { label: "Daily Ops", href: "/erp/daily-ops", icon: "ClipboardList" },
+      { label: "Wastage Lab", href: "/erp/wastage", icon: "Flame" },
+      { label: "Forecast", href: "/erp/forecast", icon: "Radar" },
+      { label: "Accounting", href: "/erp/accounting", icon: "Wallet" },
+      { label: "Data Explorer", href: "/erp/explorer", icon: "FileSpreadsheet" },
+      { label: "Founder View", href: "/erp/founder", icon: "TrendingUp" },
     ],
   },
   {

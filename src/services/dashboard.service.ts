@@ -11,6 +11,7 @@ import type {
   RecentOrder,
   CategoryRevenue,
 } from "@/types"
+import type { OverviewData, OverviewPeriod } from "@/types/overview.types"
 
 /* ------------------------------------------------------------------ */
 /*  Backend → Frontend transformers                                    */
@@ -27,6 +28,7 @@ interface BackendStatBlock {
   active?: number
   out_of_stock?: number
   low_stock?: number
+  new_orders?: number
   new_this_period?: number
   repeat_rate?: number
   online?: number
@@ -74,7 +76,8 @@ function mapStats(raw: BackendDashboardStats): DashboardStats {
       codCollections: raw.today?.cod_to_collect ?? 0,
     },
     lowStockCount: (raw.products?.low_stock ?? 0) + (raw.products?.out_of_stock ?? 0),
-    pendingOrders: raw.orders?.current ?? 0,
+    // New orders waiting to be prepared — NOT the period's order total (that is `orders.value`).
+    pendingOrders: raw.orders?.new_orders ?? 0,
   }
 }
 
@@ -185,5 +188,10 @@ export async function getCategoryRevenue(): Promise<CategoryRevenue[]> {
   const { data } = await api.get<ApiResponse<CategoryRevenue[]>>(
     `/admin/dashboard/category-revenue`
   )
+  return data.data
+}
+
+export async function getOverview(period: OverviewPeriod = "week"): Promise<OverviewData> {
+  const { data } = await api.get<ApiResponse<OverviewData>>(`/admin/dashboard/overview`, { params: { period } })
   return data.data
 }

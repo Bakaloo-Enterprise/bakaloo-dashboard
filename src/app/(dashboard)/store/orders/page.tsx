@@ -8,6 +8,7 @@
  */
 
 import { useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Download,
@@ -87,7 +88,12 @@ export default function StoreOrdersPage() {
   const queryClient = useQueryClient()
 
   const [searchInput, setSearchInput] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  // a link such as /store/orders?status=CONFIRMED (from the dashboard) opens already filtered
+  const searchParams = useSearchParams()
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    const v = searchParams.get("status")
+    return v && (ALL_STATUSES as readonly string[]).includes(v) ? v : "all"
+  })
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
   const [page, setPage] = useState(1)

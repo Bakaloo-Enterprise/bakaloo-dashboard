@@ -106,21 +106,21 @@ export default function StoreDashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <KPICard
             icon={ShoppingCart}
-            label="Today's Orders"
+            label="Today's Orders (not cancelled or refunded)"
             value={String(kpis?.today_orders ?? 0)}
             href="/store/orders"
           />
           <KPICard
             icon={DollarSign}
-            label="Today's Revenue"
+            label="Today's Revenue (after refunds)"
             value={formatCurrency(kpis?.today_revenue ?? 0)}
             href="/store/financials"
           />
           <KPICard
             icon={Loader2}
-            label="Pending Orders"
+            label="New orders to accept"
             value={String(kpis?.pending_orders ?? 0)}
-            href="/store/orders?status=PENDING"
+            href="/store/orders?status=CONFIRMED"
             highlight={!!kpis?.pending_orders}
           />
           <KPICard
@@ -132,7 +132,7 @@ export default function StoreDashboardPage() {
           />
           <KPICard
             icon={TrendingUp}
-            label="Avg Order Value"
+            label="Avg Order Value (30 days)"
             value={formatCurrency(kpis?.avg_order_value ?? 0)}
           />
           <KPICard
@@ -162,7 +162,7 @@ export default function StoreDashboardPage() {
           </div>
         ) : !dashboard?.recent_orders?.length ? (
           <p className="text-sm text-muted-foreground py-8 text-center">
-            No orders yet today
+            No orders yet
           </p>
         ) : (
           <div className="space-y-2">

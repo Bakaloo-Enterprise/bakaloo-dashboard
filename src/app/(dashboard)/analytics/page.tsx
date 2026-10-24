@@ -59,16 +59,13 @@ import {
 import { useRiders } from "@/hooks/useRiders"
 import { exportPdf, exportExcel } from "@/services/analytics.service"
 import { formatINR } from "@/lib/utils"
+import { addDays, istToday } from "@/components/business/business-helpers"
 import type { GroupBy } from "@/types/analytics.types"
 
+/** The last `days` India days INCLUDING today (the old version used the browser's UTC date and counted one day too many). */
 function getDateRange(days: number) {
-  const end = new Date()
-  const start = new Date()
-  start.setDate(end.getDate() - days)
-  return {
-    startDate: start.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10),
-  }
+  const endDate = istToday()
+  return { startDate: addDays(endDate, -(days - 1)), endDate }
 }
 
 const RANGE_OPTIONS = [
@@ -136,14 +133,8 @@ function AnalyticsContent() {
 
   // Comparison: current period vs previous period of same length
   const prevRange = useMemo(() => {
-    const end = new Date(startDate)
-    end.setDate(end.getDate() - 1)
-    const start = new Date(end)
-    start.setDate(end.getDate() - rangeDays + 1)
-    return {
-      startDate: start.toISOString().slice(0, 10),
-      endDate: end.toISOString().slice(0, 10),
-    }
+    const end = addDays(startDate, -1)
+    return { startDate: addDays(end, -(rangeDays - 1)), endDate: end }
   }, [startDate, rangeDays])
   const { data: comparison, isLoading: comparisonLoading } = useComparison(
     startDate, endDate, prevRange.startDate, prevRange.endDate
@@ -194,6 +185,7 @@ function AnalyticsContent() {
       date: new Date(pt.period).toLocaleDateString("en-IN", {
         month: "short",
         day: "numeric",
+        timeZone: "UTC", // the day is already an India calendar date; don't let the browser's zone shift it
       }),
     }))
   }, [sales])
@@ -335,6 +327,7 @@ function AnalyticsContent() {
                   stroke="hsl(var(--primary))"
                   fill="url(#colorRevenue)"
                   strokeWidth={2}
+                  isAnimationActive={false}
                 />
                 <Area
                   yAxisId="orders"
@@ -344,6 +337,7 @@ function AnalyticsContent() {
                   fill="none"
                   strokeWidth={2}
                   strokeDasharray="5 5"
+                  isAnimationActive={false}
                 />
               </AreaChart>
             </ResponsiveContainer>

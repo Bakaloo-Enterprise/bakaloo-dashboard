@@ -128,26 +128,26 @@ export default function HQDashboardPage() {
           {/* Primary KPIs */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <KPICard
-              label="Total Revenue"
+              label="Total Revenue (after refunds)"
               value={formatCurrency(kpis.totalRevenue)}
-              change={kpis.revenueChange}
               icon={<IndianRupee className="h-5 w-5" />}
               variant="primary"
             />
             <KPICard
-              label="Total Orders"
+              label="Total Orders (not cancelled or refunded)"
               value={formatNumber(kpis.totalOrders)}
-              change={kpis.ordersChange}
               icon={<ShoppingCart className="h-5 w-5" />}
             />
             <KPICard
-              label="Today's Revenue"
+              label="Today's Revenue (vs yesterday)"
               value={formatCurrency(kpis.todayRevenue)}
+              change={kpis.revenueChange}
               icon={<IndianRupee className="h-5 w-5" />}
             />
             <KPICard
-              label="Today's Orders"
+              label="Today's Orders (vs yesterday)"
               value={formatNumber(kpis.todayOrders)}
+              change={kpis.ordersChange}
               icon={<Activity className="h-5 w-5" />}
             />
           </div>
@@ -165,7 +165,7 @@ export default function HQDashboardPage() {
               icon={<Store className="h-5 w-5" />}
             />
             <KPICard
-              label="Total Customers"
+              label="Customers who bought"
               value={formatNumber(kpis.totalCustomers)}
               icon={<Users className="h-5 w-5" />}
             />
@@ -175,7 +175,7 @@ export default function HQDashboardPage() {
               icon={<Bike className="h-5 w-5" />}
             />
             <KPICard
-              label="Pending Orders"
+              label="New orders to accept"
               value={formatNumber(kpis.pendingOrders)}
               icon={<Clock className="h-5 w-5" />}
             />
@@ -185,7 +185,7 @@ export default function HQDashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Average Order Value
+                Average Order Value (all time)
               </CardTitle>
             </CardHeader>
             <CardContent>

@@ -5,7 +5,12 @@ import type { ApiResponse } from "@/types"
 export interface StoreDashboardKPIs {
   today_orders: number
   today_revenue: number
+  /** orders waiting for the store to accept them */
   pending_orders: number
+  awaiting_payment?: number
+  preparing?: number
+  out_for_delivery?: number
+  out_of_stock_count?: number
   low_stock_count: number
   avg_order_value: number
   total_products: number

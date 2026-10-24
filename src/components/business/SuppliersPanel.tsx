@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, CheckCircle2, ChevronRight, HandCoins, Phone, Plus, Truck, Users } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronRight, HandCoins, MessageCircle, Phone, Plus, ShoppingCart, Truck, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePayables } from "@/hooks/useBusiness"
 import { cn } from "@/lib/utils"
 import { formatRupees, istToday } from "./business-helpers"
 import { dayWord } from "./requirement-helpers"
+import { QuickBuyDialog } from "./QuickBuyDialog"
 import { SupplierDialog } from "./SupplierDialog"
+import { telLink, whatsappLink } from "./buylist"
 import { SupplierFormDialog } from "./SupplierFormDialog"
 import { TERMS_UI } from "./supplier-helpers"
 
@@ -17,6 +19,7 @@ export function SuppliersPanel({ canManage }: { canManage: boolean }) {
   const pay = usePayables()
   const [open, setOpen] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [buyFrom, setBuyFrom] = useState<string | null>(null)
   const today = istToday()
   if (pay.isLoading) return <Skeleton className="h-48 w-full rounded-2xl" />
   if (pay.isError || !pay.data) return <p role="alert" className="text-sm text-red-600">Could not load suppliers.</p>
@@ -31,9 +34,9 @@ export function SuppliersPanel({ canManage }: { canManage: boolean }) {
       </div>
       {d.vendors.length === 0 ? <p role="status" className="rounded-2xl border-2 border-dashed p-10 text-center text-muted-foreground"><Users className="mx-auto mb-2 h-10 w-10" aria-hidden />No suppliers yet.</p> : (
         <ul className="grid gap-3 sm:grid-cols-2">
-          {d.vendors.map((v) => { const t = TERMS_UI[v.paymentTerms]; return (
-            <li key={v.vendorId}>
-              <button type="button" onClick={() => setOpen(v.vendorId)} className={cn("flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left shadow-sm hover:bg-muted/40", v.overdue > 0 ? "border-red-300" : v.owed > 0 ? "border-amber-300" : "border-green-300", !v.isActive && "opacity-60")}>
+          {d.vendors.map((v) => { const t = TERMS_UI[v.paymentTerms]; const tel = telLink(v.phone); const wa = whatsappLink(v.phone, `Hello ${v.name}, `); return (
+            <li key={v.vendorId} className={cn("rounded-2xl border-2 bg-card shadow-sm", v.overdue > 0 ? "border-red-300" : v.owed > 0 ? "border-amber-300" : "border-green-300", !v.isActive && "opacity-60")}>
+              <button type="button" onClick={() => setOpen(v.vendorId)} className="flex w-full items-center gap-3 rounded-t-2xl p-3 text-left hover:bg-muted/40">
                 <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border", t.tone)} title={t.hint}><t.icon className="h-6 w-6" aria-label={t.label} /></span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-base font-semibold">{v.name}</span>
@@ -42,10 +45,19 @@ export function SuppliersPanel({ canManage }: { canManage: boolean }) {
                     {v.nextDue && v.owed > 0 && <span className={v.overdue > 0 ? "font-bold text-red-700" : ""}>pay by {dayWord(v.nextDue, today)}</span>}
                     {v.onTheWay && <span className="inline-flex items-center gap-1"><Truck className="h-3 w-3" aria-hidden />{v.onTheWay.count} coming</span>}
                   </span>
+                  {(v.usually?.length ?? 0) > 0 && <span className="mt-0.5 block truncate text-xs text-muted-foreground">Usually: <span className="font-medium text-foreground">{(v.usually ?? []).join(", ")}</span></span>}
                 </span>
                 <span className="shrink-0 text-right">{v.owed > 0 ? <><span className="block text-xs text-muted-foreground">owe</span><span className={cn("text-lg font-extrabold tabular-nums", v.overdue > 0 ? "text-red-700" : "text-amber-800")}>{formatRupees(v.owed)}</span></> : <CheckCircle2 className="h-7 w-7 text-green-600" aria-label="Nothing owed" />}</span>
                 <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
               </button>
+              {v.isActive && (
+                <div className="flex flex-wrap items-center gap-2 border-t px-3 py-2">
+                  {canManage && <Button type="button" className="h-9 bg-green-600 px-3 text-sm font-bold hover:bg-green-700" onClick={() => setBuyFrom(v.vendorId)}><ShoppingCart className="mr-1.5 h-4 w-4" aria-hidden />Buy from them</Button>}
+                  {tel && <a href={tel} aria-label={`Call ${v.name}`} className="inline-flex h-9 items-center gap-1 rounded-full border px-3 text-xs font-semibold hover:bg-muted"><Phone className="h-4 w-4" aria-hidden />Call</a>}
+                  {wa && <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${v.name}`} className="inline-flex h-9 items-center gap-1 rounded-full border border-green-300 bg-green-50 px-3 text-xs font-semibold text-green-800 hover:bg-green-100"><MessageCircle className="h-4 w-4" aria-hidden />WhatsApp</a>}
+                  {v.lastBoughtOn && <span className="ml-auto text-xs text-muted-foreground">last bought {dayWord(v.lastBoughtOn, today)}</span>}
+                </div>
+              )}
             </li>
           ) })}
         </ul>
@@ -53,6 +65,7 @@ export function SuppliersPanel({ canManage }: { canManage: boolean }) {
       <details className="text-xs text-muted-foreground"><summary className="cursor-pointer select-none">How is this worked out?</summary><p className="mt-1">{d.note}</p></details>
       <SupplierDialog vendorId={open} canManage={canManage} onOpenChange={(o) => !o && setOpen(null)} />
       <SupplierFormDialog open={adding} onOpenChange={setAdding} />
+      <QuickBuyDialog open={buyFrom !== null} item={null} vendorId={buyFrom ?? undefined} onClose={() => setBuyFrom(null)} />
     </div>
   )
 }

@@ -47,6 +47,7 @@ export function featureForPath(path: string): FeatureKey | null {
   if (path === "/procurement" || path.startsWith("/procurement/")) return "procurement"
   if (path === "/catalog-bulk" || path.startsWith("/catalog-bulk/")) return "catalog_bulk"
   if (path === "/business-analytics" || path.startsWith("/business-analytics/")) return "business_analytics"
+  if (path === "/erp" || path.startsWith("/erp/")) return "erp"
   if (path === "/pos" || path.startsWith("/pos/")) return "store_pos"
   return null
 }

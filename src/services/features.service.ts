@@ -8,6 +8,7 @@ export type FeatureKey =
   | "catalog_bulk"
   | "store_pos"
   | "business_analytics"
+  | "erp"
 
 export interface FeatureState {
   label: string

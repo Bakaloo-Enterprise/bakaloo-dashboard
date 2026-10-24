@@ -76,7 +76,7 @@ export default function ProcurementPage() {
         {TABS.map(([id, label, Icon]) => <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn("-mb-px flex items-center gap-1.5 border-b-4 px-4 py-3 text-base", tab === id ? "border-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground")}><Icon className="h-5 w-5" aria-hidden />{label}</button>)}
       </div>
 
-      {tab === "plan" && <PurchasePlan />}
+      {tab === "plan" && <PurchasePlan manage={manage} />}
       {tab === "month" && <MonthlyReport />}
       {tab === "requests" && <RequirementsList canManage={manage} />}
 

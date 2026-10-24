@@ -34,7 +34,9 @@ import {
   getLiveStats,
   getRecentOrders,
   getCategoryRevenue,
+  getOverview,
 } from "@/services/dashboard.service"
+import type { OverviewPeriod } from "@/types/overview.types"
 import { useShopContext } from "@/hooks/useShopContext"
 
 /** Sentinel used while the Shop_Context_Store is hydrating. */
@@ -146,6 +148,20 @@ export function useCategoryRevenue() {
     queryFn: getCategoryRevenue,
     enabled: shopKey !== NONE_SHOP_KEY,
     staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  })
+}
+
+/** The accurate overview (one call, one set of rules). Refreshes itself every 20 seconds while the page is open. */
+export function useOverview(period: OverviewPeriod = "week") {
+  const shopKey = useShopKey()
+  return useQuery({
+    queryKey: ["dashboard-home", shopKey, "overview", period] as const,
+    queryFn: () => getOverview(period),
+    enabled: shopKey !== NONE_SHOP_KEY,
+    staleTime: 15 * 1000,
+    refetchInterval: 20 * 1000,
+    refetchIntervalInBackground: true, // a Command Center left open on a side screen keeps itself current
     placeholderData: (prev) => prev,
   })
 }
