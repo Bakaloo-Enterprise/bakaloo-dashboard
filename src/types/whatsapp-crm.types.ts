@@ -496,6 +496,8 @@ export interface AudiencePreview {
   audience: number
   willSend: number
   skipped: Record<string, number>
+  /** 10-digit numbers skipped only because no opt-in is recorded (at most 200) */
+  needsOptIn?: string[]
 }
 export interface CampaignRecipient {
   id: string

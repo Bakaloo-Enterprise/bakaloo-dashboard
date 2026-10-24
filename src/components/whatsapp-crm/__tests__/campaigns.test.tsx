@@ -163,27 +163,41 @@ describe("CampaignDialog", () => {
 })
 
 describe("CampaignDetailSheet", () => {
-  it("a draft can only be sent after checking the audience, and never when nobody can receive it", async () => {
+  it("checks the audience by itself and never allows sending when nobody can receive", async () => {
     api.getCampaign.mockResolvedValue(campaign())
     api.previewCampaign.mockResolvedValue({ audience: 3, willSend: 0, skipped: { NO_CONSENT: 3 } })
     wrap(<CampaignDetailSheet id="c1" onClose={vi.fn()} onEdit={vi.fn()} />)
-    const send = await screen.findByRole("button", { name: /Send now/ })
-    expect(send).toBeDisabled()
-    fireEvent.click(screen.getByRole("button", { name: "Check who will receive it" }))
     expect(await screen.findByText(/3 skipped — No recorded opt-in/)).toBeInTheDocument()
-    expect(send).toBeDisabled()
+    expect(api.previewCampaign).toHaveBeenCalledWith("c1")
+    expect(screen.getByRole("button", { name: /Send now/ })).toBeDisabled()
     expect(screen.getByText(/Nobody can receive this yet/)).toBeInTheDocument()
   })
 
-  it("launches once the preview shows recipients", async () => {
+  it("launches as soon as the automatic check shows recipients", async () => {
     api.getCampaign.mockResolvedValue(campaign())
     api.previewCampaign.mockResolvedValue({ audience: 5, willSend: 4, skipped: { OPTED_OUT: 1 } })
     api.launchCampaign.mockResolvedValue(campaign({ status: "SENDING" }))
     wrap(<CampaignDetailSheet id="c1" onClose={vi.fn()} onEdit={vi.fn()} />)
-    fireEvent.click(await screen.findByRole("button", { name: "Check who will receive it" }))
     expect(await screen.findByText(/of 5 will receive it/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: /Send now/ }))
     await waitFor(() => expect(api.launchCampaign).toHaveBeenCalledWith("c1", undefined))
+  })
+
+  it("records opt-in for the skipped customers right there and unlocks Send now", async () => {
+    api.getCampaign.mockResolvedValue(campaign())
+    api.previewCampaign
+      .mockResolvedValueOnce({ audience: 2, willSend: 0, skipped: { NO_CONSENT: 2 }, needsOptIn: ["9876543210", "9123456789"] })
+      .mockResolvedValue({ audience: 2, willSend: 2, skipped: {}, needsOptIn: [] })
+    api.recordConsent.mockResolvedValue({ recorded: 2, invalid: [], invalidCount: 0 })
+    wrap(<CampaignDetailSheet id="c1" onClose={vi.fn()} onEdit={vi.fn()} />)
+    const record = await screen.findByRole("button", { name: /Record opt-in for these customers/ })
+    expect(record).toBeDisabled()
+    fireEvent.change(screen.getByLabelText("Where did they agree?"), { target: { value: "told us on whatsapp" } })
+    fireEvent.click(screen.getByLabelText(/I confirm these customers agreed/))
+    fireEvent.click(record)
+    await waitFor(() => expect(api.recordConsent).toHaveBeenCalledWith({ phones: ["9876543210", "9123456789"], source: "told us on whatsapp", confirm: true }))
+    expect(await screen.findByText(/of 2 will receive it/)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole("button", { name: /Send now/ })).toBeEnabled())
   })
 
   it("shows results and the right controls for a running campaign", async () => {

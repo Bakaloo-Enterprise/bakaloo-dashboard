@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CalendarClock, Pause, Play, Rocket, Trash2, XCircle } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCampaign, useCampaignMutations, useCampaignRecipients } from "@/hooks/useWhatsappCrm"
+import { useCampaign, useCampaignMutations, useCampaignRecipients, useConsentMutations } from "@/hooks/useWhatsappCrm"
 import { formatRelativeTime } from "@/lib/utils"
 import type { AudiencePreview } from "@/types/whatsapp-crm.types"
 import { availableActions, CAMPAIGN_STATUS, localInputToIso, minScheduleLocal, pct, progressPercent, SKIP_REASON } from "./campaign-helpers"
@@ -38,13 +39,25 @@ export function CampaignDetailSheet({ id, onClose, onEdit }: { id: string | null
   const m = useCampaignMutations()
   const [preview, setPreview] = useState<AudiencePreview | null>(null)
   const [when, setWhen] = useState("")
+  const [optSource, setOptSource] = useState("")
+  const [optConfirm, setOptConfirm] = useState(false)
+  const consent = useConsentMutations()
 
   const c = campaign.data
+  const isDraft = c?.status === "DRAFT"
+  const check = () => id && m.preview.mutate(id, { onSuccess: setPreview })
+  // A draft is checked as soon as it opens, so the Send button always reflects who can really receive it.
+  useEffect(() => {
+    if (id && isDraft) m.preview.mutate(id, { onSuccess: setPreview })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isDraft])
+
   const st = c ? CAMPAIGN_STATUS[c.status] : null
   const actions = c ? availableActions(c) : []
 
   const close = () => {
     setPreview(null)
+    setOptConfirm(false)
     setWhen("")
     setFilter("")
     onClose()
@@ -104,14 +117,30 @@ export function CampaignDetailSheet({ id, onClose, onEdit }: { id: string | null
             {c.status === "DRAFT" && (
               <section className="mt-5 space-y-3 rounded-lg border p-3" aria-label="Launch">
                 <h4 className="text-sm font-semibold">Before you send</h4>
-                <Button variant="outline" size="sm" disabled={m.preview.isPending} onClick={() => m.preview.mutate(c.id, { onSuccess: setPreview })}>
-                  {m.preview.isPending ? "Checking…" : "Check who will receive it"}
+                <Button variant="outline" size="sm" disabled={m.preview.isPending} onClick={check}>
+                  {m.preview.isPending ? "Checking…" : "Check again"}
                 </Button>
                 {preview && (
                   <div className="rounded-md bg-muted/50 p-2 text-sm" role="status">
                     <p><strong>{preview.willSend}</strong> of {preview.audience} will receive it.</p>
                     {Object.entries(preview.skipped).map(([k, n]) => <p key={k} className="text-xs text-muted-foreground">{n} skipped — {SKIP_REASON[k] ?? k}</p>)}
-                    {preview.willSend === 0 && <p className="mt-1 text-xs text-amber-800">Nobody can receive this yet. Record opt-ins below the campaign list, or pick another audience.</p>}
+                    {preview.willSend === 0 && <p className="mt-1 text-xs text-amber-800">Nobody can receive this yet — Send now unlocks as soon as at least one person can.</p>}
+                  </div>
+                )}
+                {preview && (preview.needsOptIn?.length ?? 0) > 0 && (
+                  <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs dark:bg-amber-950/20" aria-label="Record opt-in for these customers">
+                    <p className="font-medium">{preview.needsOptIn!.length} customer{preview.needsOptIn!.length === 1 ? "" : "s"} in this audience ha{preview.needsOptIn!.length === 1 ? "s" : "ve"} no recorded opt-in, so WhatsApp marketing cannot go to them yet.</p>
+                    <p className="text-muted-foreground">If they really agreed to get WhatsApp messages from Bakaloo (for example you are testing with your own numbers), record that here. Customers who reply STOP are never overridden.</p>
+                    <p className="break-words text-muted-foreground">{preview.needsOptIn!.slice(0, 12).join(", ")}{preview.needsOptIn!.length > 12 ? ` and ${preview.needsOptIn!.length - 12} more` : ""}</p>
+                    <input aria-label="Where did they agree?" value={optSource} onChange={(e) => setOptSource(e.target.value)} maxLength={40} placeholder="Where did they agree? e.g. told us on WhatsApp" className="h-9 w-full rounded-md border bg-background px-2 text-sm" />
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" checked={optConfirm} onChange={(e) => setOptConfirm(e.target.checked)} className="mt-0.5" />
+                      <span>I confirm these customers agreed to receive WhatsApp messages from Bakaloo.</span>
+                    </label>
+                    <Button size="sm" disabled={!optConfirm || optSource.trim().length < 3 || consent.record.isPending}
+                      onClick={() => consent.record.mutate({ phones: preview.needsOptIn!, source: optSource.trim(), confirm: true }, { onSuccess: (r) => { toast.success(`Opt-in recorded for ${r.recorded}`); setOptConfirm(false); check() } })}>
+                      {consent.record.isPending ? "Saving…" : "Record opt-in for these customers"}
+                    </Button>
                   </div>
                 )}
                 <div className="flex flex-wrap items-end gap-2">
