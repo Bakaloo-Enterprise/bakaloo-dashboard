@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useCampaign, useCampaignMutations, useCampaignRecipients } from "@/hooks/useWhatsappCrm"
 import { formatRelativeTime } from "@/lib/utils"
 import type { AudiencePreview } from "@/types/whatsapp-crm.types"
-import { availableActions, CAMPAIGN_STATUS, isQuietHoursIST, localInputToIso, minScheduleLocal, pct, progressPercent, SKIP_REASON } from "./campaign-helpers"
+import { availableActions, CAMPAIGN_STATUS, localInputToIso, minScheduleLocal, pct, progressPercent, SKIP_REASON } from "./campaign-helpers"
 
 const RECIPIENT_FILTERS = [
   { v: "", label: "All" },
@@ -42,7 +42,6 @@ export function CampaignDetailSheet({ id, onClose, onEdit }: { id: string | null
   const c = campaign.data
   const st = c ? CAMPAIGN_STATUS[c.status] : null
   const actions = c ? availableActions(c) : []
-  const marketingAtNight = c?.template_category === "MARKETING" && isQuietHoursIST()
 
   const close = () => {
     setPreview(null)
@@ -115,7 +114,6 @@ export function CampaignDetailSheet({ id, onClose, onEdit }: { id: string | null
                     {preview.willSend === 0 && <p className="mt-1 text-xs text-amber-800">Nobody can receive this yet. Record opt-ins below the campaign list, or pick another audience.</p>}
                   </div>
                 )}
-                {marketingAtNight && <p className="text-xs text-amber-800">It is night in India (9 pm – 9 am). A marketing campaign started now begins sending at 9 am.</p>}
                 <div className="flex flex-wrap items-end gap-2">
                   <Button disabled={!preview || preview.willSend === 0 || m.launch.isPending} onClick={() => m.launch.mutate({ id: c.id }, { onSuccess: () => setPreview(null) })}>
                     <Rocket className="mr-1 h-4 w-4" /> Send now

@@ -54,7 +54,7 @@ export default function CampaignsPage() {
       </PageHeader>
 
       <div role="note" className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-        Marketing messages are only sent between 9 am and 9 pm India time. People who opted out, are on the do-not-contact list, or haven’t opted in are always skipped.
+        People who opted out, are on the do-not-contact list, or haven’t opted in are always skipped.
       </div>
 
       <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filter campaigns">

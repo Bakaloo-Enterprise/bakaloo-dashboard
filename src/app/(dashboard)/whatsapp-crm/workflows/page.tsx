@@ -72,7 +72,7 @@ export default function WorkflowsPage() {
       </PageHeader>
 
       <div role="note" className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-        Each event is handled once. Customers who have not opted in, opted out, or are on the do-not-contact list are skipped. Marketing messages are held back between 9 pm and 9 am India time.
+        Each event is handled once. Customers who have not opted in, opted out, or are on the do-not-contact list are skipped.
       </div>
 
       <ul className="space-y-2" aria-label="Workflows">
