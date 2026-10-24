@@ -69,6 +69,10 @@ function Bubble({ m, conversationId, tail }: { m: WaMessage; conversationId: str
           </p>
         )}
         {m.template_name && <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Template</p>}
+        {!isMedia && m.template_name && typeof (m.media as { url?: string } | null)?.url === "string" && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={(m.media as { url: string }).url} alt="Template picture" className="mb-1.5 max-h-64 w-full rounded-lg object-cover" loading="lazy" />
+        )}
         {isMedia && (
           <div className={cn(text || !mediaOnly ? "mb-1.5" : "")}>
             <MessageMedia conversationId={conversationId} message={m} />
