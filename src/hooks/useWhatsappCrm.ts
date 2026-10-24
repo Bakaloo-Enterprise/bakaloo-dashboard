@@ -89,8 +89,13 @@ import { qk } from "@/lib/query-keys"
 import type { AnalyticsQuery, BreakdownBy, RateCategory, ProspectRowStatus, CampaignInput, CampaignStatus, WorkflowInput, TemplateFilters, TemplateFormError, TemplateInput, BotAreaInput, BotLanguage, BotRuleInput, BotSettingsInput, ConversationFilters, CrmPermission, LabelInput, PipelineBoard, PipelineFilters } from "@/types/whatsapp-crm.types"
 
 export function errorMessage(error: unknown): string {
-  const resp = (error as { response?: { data?: { message?: string } } })?.response
-  if (resp?.data?.message) return resp.data.message
+  const resp = (error as { response?: { data?: { message?: string; details?: unknown } } })?.response
+  if (resp?.data?.message) {
+    // Validation errors carry the exact reason per field — show it instead of a vague "fix the highlighted fields".
+    const d = resp.data.details
+    const reasons = d && typeof d === "object" && !Array.isArray(d) ? Object.values(d).filter((v): v is string => typeof v === "string") : []
+    return reasons.length ? `${resp.data.message}: ${reasons.join(" ")}` : resp.data.message
+  }
   if (error instanceof Error) return error.message
   return "Something went wrong"
 }

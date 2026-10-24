@@ -80,7 +80,7 @@ function Bubble({ m, conversationId, tail }: { m: WaMessage; conversationId: str
           {out && <Ticks status={m.status} />}
         </div>
         {m.status === "FAILED" && (
-          <p className="mt-1 text-[11px] text-red-600">Not delivered{m.error_details ? `: ${m.error_details}` : m.error_title ? `: ${m.error_title}` : ""}</p>
+          <p className="mt-1 text-[11px] text-red-600">Not delivered{m.error_code === 131049 ? ": WhatsApp (Meta) limited this promotional message for this customer. It is not a problem with your template. Try again later, or wait for the customer to message you first." : m.error_details ? `: ${m.error_details}` : m.error_title ? `: ${m.error_title}` : ""}</p>
         )}
       </div>
     </div>
