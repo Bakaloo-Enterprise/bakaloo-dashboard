@@ -22,12 +22,12 @@ interface ProductSourceConfigProps {
   onBindingChange: (binding: UpdateSectionMerchPayload) => void
 }
 
-// Backend hard-caps every manifest section (product_carousel,
-// category_product_grid, trending_products, arched_product_showcase) at 12
-// products — see HOME_MANIFEST_SECTION_CAP in public.controller.js. This is
-// the single product-limit control for these sections; keep it in lock-step
-// with that constant.
-const MOBILE_HOME_LIMIT_MAX = 12
+// Backend caps every manifest section (product_carousel,
+// category_product_grid, trending_products, arched_product_showcase) at 200
+// products — see HOME_MANIFEST_SECTION_CAP in public.controller.js and the
+// merch_binding.limit maximum in sections.schema.js. This is the single
+// product-limit control for these sections; keep all three in lock-step.
+const MOBILE_HOME_LIMIT_MAX = 200
 
 type SourceMode = "category" | "tag" | "manual"
 
