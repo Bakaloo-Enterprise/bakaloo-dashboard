@@ -70,7 +70,7 @@ export default function PipelinePage() {
 
       {board.data?.truncated && (
         <p role="status" className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-          Showing the 500 most recently active customers. Use the filters to narrow down.
+          Showing the 10,000 most recently active customers. Use the filters to narrow down.
         </p>
       )}
       {board.isLoading && <Skeleton className="h-64 w-full" />}

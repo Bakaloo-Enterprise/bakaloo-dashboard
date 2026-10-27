@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCorners, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core"
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
 import { UserRound } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { PipelineBoard as Board, PipelineCard, PipelineStage } from "@/types/whatsapp-crm.types"
 import { PipelineCardView } from "./PipelineCardView"
@@ -32,8 +33,21 @@ function DraggableCard({ card, disabled, onOpen }: { card: PipelineCard; disable
   )
 }
 
+/** Columns can hold thousands of customers; draw them a batch at a time so the board stays fast. */
+const BATCH = 50
+
+function ShowMore({ shown, total, onMore }: { shown: number; total: number; onMore: () => void }) {
+  if (shown >= total) return null
+  return (
+    <Button variant="outline" size="sm" className="h-8 shrink-0 text-xs" onClick={onMore}>
+      Show more ({total - shown} left)
+    </Button>
+  )
+}
+
 function Column({ stage, canMove, onOpen }: { stage: PipelineStage; canMove: boolean; onOpen: (c: PipelineCard) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, disabled: !canMove })
+  const [shown, setShown] = useState(BATCH)
   return (
     <section
       ref={setNodeRef}
@@ -53,9 +67,10 @@ function Column({ stage, canMove, onOpen }: { stage: PipelineStage; canMove: boo
       </header>
       <div className="flex max-h-[calc(100vh-17rem)] min-h-24 flex-1 flex-col gap-2 overflow-y-auto p-2">
         {stage.cards.length === 0 && <p className="py-4 text-center text-xs text-muted-foreground">No customers</p>}
-        {stage.cards.map((c) => (
+        {stage.cards.slice(0, shown).map((c) => (
           <DraggableCard key={c.contact_id} card={c} disabled={!canMove} onOpen={() => onOpen(c)} />
         ))}
+        <ShowMore shown={shown} total={stage.cards.length} onMore={() => setShown((n) => n + BATCH * 2)} />
       </div>
     </section>
   )
@@ -70,6 +85,7 @@ interface Props {
 export function PipelineBoardView({ board, canMove, onMove }: Props) {
   const router = useRouter()
   const [active, setActive] = useState<PipelineCard | null>(null)
+  const [unstagedShown, setUnstagedShown] = useState(BATCH)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor))
 
   const all = [...board.stages.flatMap((s) => s.cards), ...board.unstaged]
@@ -93,9 +109,10 @@ export function PipelineBoardView({ board, canMove, onMove }: Props) {
           <section className="flex w-72 shrink-0 flex-col rounded-lg border border-dashed bg-muted/20" aria-label="New, not staged yet">
             <header className="border-b px-3 py-2 text-sm font-semibold">New</header>
             <div className="flex flex-col gap-2 p-2">
-              {board.unstaged.map((c) => (
+              {board.unstaged.slice(0, unstagedShown).map((c) => (
                 <DraggableCard key={c.contact_id} card={c} disabled={!canMove} onOpen={() => open(c)} />
               ))}
+              <ShowMore shown={unstagedShown} total={board.unstaged.length} onMore={() => setUnstagedShown((n) => n + BATCH * 2)} />
             </div>
           </section>
         )}
