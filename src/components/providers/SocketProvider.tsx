@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useAuthStore } from "@/store/auth.store"
 import { useNotificationStore } from "@/store/notifications.store"
 import { getQueryClient } from "@/lib/queryClient"
+import { createCrmRefresher } from "@/lib/crm-refresh"
 import {
   registerSocketDisconnect,
   unregisterSocketDisconnect,
@@ -31,6 +32,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token) return
 
+    const crmRefresh = createCrmRefresher(getQueryClient)
     const s = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
       // Re-evaluate the token on every (re)connect so a refreshed/rotated
       // access token is picked up automatically (Req 11.1, 11.6). socket.io-client
@@ -218,34 +220,22 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     // Invalidate rather than patch the cache: the list order, unread counts
     // and the 24 h window all change, and the refetch is cheap.
     s.on("crm:message", (e: { conversationId?: string }) => {
-      const qc = getQueryClient()
-      qc.invalidateQueries({ queryKey: ["crm", "conversations"] })
-      qc.invalidateQueries({ queryKey: ["crm", "pipeline"] })
-      if (e?.conversationId) {
-        qc.invalidateQueries({ queryKey: ["crm", "messages", e.conversationId] })
-        qc.invalidateQueries({ queryKey: ["crm", "conversation", e.conversationId] })
-      }
+      crmRefresh.invalidate(["crm", "conversations"], ["crm", "pipeline"])
+      if (e?.conversationId) crmRefresh.invalidate(["crm", "messages", e.conversationId], ["crm", "conversation", e.conversationId])
     })
     // Assignment / label changes (content-free event) — refresh lists, the open chat and workload.
     s.on("crm:conversation", () => {
-      const qc = getQueryClient()
-      qc.invalidateQueries({ queryKey: ["crm", "conversations"] })
-      qc.invalidateQueries({ queryKey: ["crm", "conversation"] })
-      qc.invalidateQueries({ queryKey: ["crm", "workload"] })
-      qc.invalidateQueries({ queryKey: ["crm", "labels"] })
-      qc.invalidateQueries({ queryKey: ["crm", "pipeline"] })
+      crmRefresh.invalidate(["crm", "conversations"], ["crm", "conversation"], ["crm", "workload"], ["crm", "labels"], ["crm", "pipeline"])
     })
     // Automatic or manual stage change (content-free).
     s.on("crm:pipeline", () => {
-      getQueryClient().invalidateQueries({ queryKey: ["crm", "pipeline"] })
+      crmRefresh.invalidate(["crm", "pipeline"])
     })
-    // Template approval changed (webhook or sync): refresh the library and any open template.
     s.on("crm:template", () => {
       getQueryClient().invalidateQueries({ queryKey: ["crm", "templates"] })
     })
     s.on("crm:status", (e: { conversationId?: string }) => {
-      const qc = getQueryClient()
-      if (e?.conversationId) qc.invalidateQueries({ queryKey: ["crm", "messages", e.conversationId] })
+      if (e?.conversationId) crmRefresh.invalidate(["crm", "messages", e.conversationId])
     })
 
     // Notification for any push
@@ -275,6 +265,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       unregisterSocketDisconnect(disconnectFn)
+      crmRefresh.cancel()
       s.disconnect()
       setSocket(null)
     }

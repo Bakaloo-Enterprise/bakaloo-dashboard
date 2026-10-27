@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Search, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Loader2, Search, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,13 @@ const UNASSIGNED = "__none__"
 interface Props {
   conversations: WaConversation[]
   isLoading: boolean
+  /** A filter/search change (or the periodic refresh) is being fetched while the previous rows are still shown. */
+  isRefreshing?: boolean
+  isError?: boolean
+  onRetry?: () => void
+  hasMore?: boolean
+  loadingMore?: boolean
+  onLoadMore?: () => void
   selectedId: string | null
   onSelect: (id: string) => void
   search: string
@@ -52,6 +59,17 @@ interface Props {
 
 export function ConversationList(p: Props) {
   const [bulkTarget, setBulkTarget] = useState<string>("")
+  const sentinel = useRef<HTMLLIElement>(null)
+  const { hasMore, loadingMore, onLoadMore } = p
+
+  // Reaching the bottom of the list loads the next page; the button below is the fallback if observers are unavailable.
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el || !hasMore || loadingMore || !onLoadMore || typeof IntersectionObserver === "undefined") return
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && onLoadMore(), { rootMargin: "160px" })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [hasMore, loadingMore, onLoadMore, p.conversations.length])
   return (
     <div className="flex h-full min-h-0 flex-col bg-card">
       <div className="shrink-0 space-y-2.5 border-b p-3">
@@ -161,7 +179,18 @@ export function ConversationList(p: Props) {
             ))}
           </div>
         )}
-        {!p.isLoading && p.conversations.length === 0 && (
+        {p.isError && (
+          <div role="alert" className="m-3 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            Could not load conversations.{" "}
+            {p.onRetry && (
+              <button onClick={p.onRetry} className="font-semibold underline">
+                Try again
+              </button>
+            )}
+          </div>
+        )}
+        {p.isRefreshing && <div className="sticky top-0 z-10 h-0.5 w-full animate-pulse bg-emerald-500" role="progressbar" aria-label="Updating list" />}
+        {!p.isLoading && !p.isError && p.conversations.length === 0 && (
           <p className="p-8 text-center text-sm text-muted-foreground">No conversations yet. New customer messages will appear here automatically.</p>
         )}
         <ul>
@@ -223,6 +252,14 @@ export function ConversationList(p: Props) {
               </li>
             )
           })}
+          {p.hasMore && (
+            <li ref={sentinel} className="flex justify-center p-3">
+              <Button variant="outline" size="sm" className="h-8 text-xs" disabled={p.loadingMore} onClick={p.onLoadMore}>
+                {p.loadingMore ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                {p.loadingMore ? "Loading…" : "Load more"}
+              </Button>
+            </li>
+          )}
         </ul>
       </ScrollArea>
     </div>

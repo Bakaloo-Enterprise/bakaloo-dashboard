@@ -19,7 +19,7 @@ import {
   useAgents,
   useBulkAssign,
   useConversation,
-  useConversations,
+  useConversationsPaged,
   useCrmMe,
   useCrmStatus,
   useLabels,
@@ -60,14 +60,14 @@ export default function WhatsappInboxPage() {
 
   const crm = useCrmStatus()
   const biz = useBizMe()
-  const list = useConversations({ search: debouncedSearch || undefined, status, assignedTo: owner || undefined, labelId: labelId || undefined, limit: 50 })
+  const list = useConversationsPaged({ search: debouncedSearch || undefined, status, assignedTo: owner || undefined, labelId: labelId || undefined })
   const detail = useConversation(selectedId)
   const messages = useMessages(selectedId)
   const send = useSendMessage(selectedId ?? "")
   const sendFile = useSendMedia(selectedId ?? "")
   const markRead = useMarkRead()
 
-  const conversations = useMemo(() => list.data ?? [], [list.data])
+  const conversations = useMemo(() => list.data?.pages.flat() ?? [], [list.data])
   const selectedSummary = conversations.find((c) => c.id === selectedId) ?? null
   const active = detail.data ?? selectedSummary
 
@@ -133,6 +133,12 @@ export default function WhatsappInboxPage() {
           <ConversationList
             conversations={conversations}
             isLoading={list.isLoading}
+            isRefreshing={list.isFetching && !list.isFetchingNextPage && !list.isLoading}
+            isError={list.isError}
+            onRetry={() => list.refetch()}
+            hasMore={Boolean(list.hasNextPage)}
+            loadingMore={list.isFetchingNextPage}
+            onLoadMore={() => list.fetchNextPage()}
             selectedId={selectedId}
             onSelect={setSelectedId}
             search={search}

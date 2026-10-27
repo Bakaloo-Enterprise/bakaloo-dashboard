@@ -1,6 +1,6 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import {
@@ -111,6 +111,23 @@ export function useConversations(filters: ConversationFilters = {}) {
     staleTime: 10_000,
     // Safety net: the socket normally pushes new chats instantly, but if it is down (or the user's role is not
     // in the broadcast room) the list still catches up on its own.
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    placeholderData: (prev) => prev,
+  })
+}
+
+const CONVERSATION_PAGE = 50
+
+/** The inbox list, loaded a page at a time so the agent can keep scrolling past the first 50 chats. */
+export function useConversationsPaged(filters: Omit<ConversationFilters, "limit" | "offset"> = {}) {
+  return useInfiniteQuery({
+    // Prefix matches ["crm","conversations"], so every existing invalidation refreshes this list too.
+    queryKey: [...qk.crmConversations(filters), "paged"] as const,
+    queryFn: ({ pageParam }) => getConversations({ ...filters, limit: CONVERSATION_PAGE, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => (last.length < CONVERSATION_PAGE ? undefined : all.length * CONVERSATION_PAGE),
+    staleTime: 10_000,
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     placeholderData: (prev) => prev,
