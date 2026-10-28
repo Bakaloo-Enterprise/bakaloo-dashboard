@@ -18,7 +18,7 @@ export function ImageUploadField({ onUploaded, label = "Upload image" }: { onUpl
     if (file.size > 5 * 1024 * 1024) return setError("The image is over 5 MB. Please use a smaller one.")
     setBusy(true)
     try {
-      onUploaded((await uploadImage(file)).url)
+      onUploaded((await uploadImage(file, undefined, "whatsapp")).url)
     } catch {
       setError("Upload failed. Please try again.")
     } finally {

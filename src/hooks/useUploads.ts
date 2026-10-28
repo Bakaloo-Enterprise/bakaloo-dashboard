@@ -8,16 +8,16 @@ import {
 } from "@/services/uploads.service"
 import { toast } from "sonner"
 
-export function useUploadImage() {
+export function useUploadImage(kind?: string) {
   return useMutation({
-    mutationFn: (file: File) => uploadImage(file),
+    mutationFn: (file: File) => uploadImage(file, undefined, kind),
     onError: (e: Error) => toast.error(e.message || "Image upload failed"),
   })
 }
 
-export function useUploadMultipleImages() {
+export function useUploadMultipleImages(kind?: string) {
   return useMutation({
-    mutationFn: (files: File[]) => uploadMultipleImages(files),
+    mutationFn: (files: File[]) => uploadMultipleImages(files, kind),
     onError: (e: Error) => toast.error(e.message || "Image upload failed"),
   })
 }

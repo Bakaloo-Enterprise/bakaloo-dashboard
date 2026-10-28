@@ -865,7 +865,7 @@ export default function ThemeTabsPage() {
 
                   <div className="space-y-2">
                     <Label>Tab Icon / Image</Label>
-                    <ImageUpload
+                    <ImageUpload kind="themes"
                       value={form.image_url || null}
                       onChange={(url) => updateForm("image_url", url ?? "")}
                       label="Upload Tab Icon"

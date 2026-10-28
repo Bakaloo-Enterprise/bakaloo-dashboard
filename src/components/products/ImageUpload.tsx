@@ -42,6 +42,8 @@ function sanitizeCloudinaryUrl(value: string | null | undefined) {
 }
 
 interface ImageUploadProps {
+  /** What the image is for, so the backend files it correctly (products, banners, themes, ...). */
+  kind?: string
   value: string | null
   onChange: (url: string | null) => void
   className?: string
@@ -50,6 +52,7 @@ interface ImageUploadProps {
 }
 
 export function ImageUpload({
+  kind = "general",
   value,
   onChange,
   className,
@@ -57,7 +60,7 @@ export function ImageUpload({
   helperText,
 }: ImageUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const uploadMutation = useUploadImage()
+  const uploadMutation = useUploadImage(kind)
   const previewSrc = sanitizeCloudinaryUrl(value)
 
   const handleFile = useCallback(
@@ -216,7 +219,7 @@ export function MultiImageUpload({
 }: MultiImageUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const uploadMutation = useUploadImage()
+  const uploadMutation = useUploadImage("products")
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

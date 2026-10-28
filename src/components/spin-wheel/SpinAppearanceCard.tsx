@@ -43,7 +43,7 @@ interface SpinAppearanceCardProps {
  */
 export function SpinAppearanceCard({ draft, onChange, canManage }: SpinAppearanceCardProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const uploadMutation = useUploadImage()
+  const uploadMutation = useUploadImage("spin-scratch")
   const previewSrc = sanitizeCloudinaryUrl(draft.backgroundImageUrl)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {

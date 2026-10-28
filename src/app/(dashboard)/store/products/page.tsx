@@ -178,7 +178,7 @@ function AddProductDialog({ shopId, onClose }: { shopId: string; onClose: () => 
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const uploadImages = useUploadMultipleImages()
+  const uploadImages = useUploadMultipleImages("products")
 
   const handleAttachCatalog = (product: Product) => {
     addMutation.mutate(

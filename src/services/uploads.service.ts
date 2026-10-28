@@ -5,9 +5,14 @@ import type { UploadedFile, UploadedImage } from "@/types/upload.types"
 type UploadProgressHandler = (progress: number) => void
 
 /** Upload a single image to Cloudinary via backend */
+/**
+ * `kind` tells the backend what the image is for (products, banners, themes, categories, nav-buttons,
+ * spin-scratch, whatsapp, ...) so it is filed, tracked and cleaned up properly.
+ */
 export async function uploadImage(
   file: File,
-  onProgress?: UploadProgressHandler
+  onProgress?: UploadProgressHandler,
+  kind?: string
 ): Promise<UploadedImage> {
   const formData = new FormData()
   formData.append("image", file)
@@ -16,6 +21,7 @@ export async function uploadImage(
     "/uploads/image",
     formData,
     {
+      params: kind ? { kind } : undefined,
       onUploadProgress: (event) => {
         if (!onProgress) return
         const total = event.total ?? file.size
@@ -54,13 +60,14 @@ export async function uploadFile(
 }
 
 /** Upload multiple images */
-export async function uploadMultipleImages(files: File[]): Promise<UploadedImage[]> {
+export async function uploadMultipleImages(files: File[], kind?: string): Promise<UploadedImage[]> {
   const formData = new FormData()
   files.forEach((f) => formData.append("images", f))
 
   const { data } = await api.post<ApiResponse<UploadedImage[]>>(
     "/uploads/images",
-    formData
+    formData,
+    { params: kind ? { kind } : undefined }
   )
   return data.data
 }

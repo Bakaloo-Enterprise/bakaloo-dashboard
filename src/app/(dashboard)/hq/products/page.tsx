@@ -114,7 +114,7 @@ function HQAddProductDialog({ shop, onClose }: { shop: ShopOption; onClose: () =
   const [manualDescription, setManualDescription] = useState("")
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const uploadImages = useUploadMultipleImages()
+  const uploadImages = useUploadMultipleImages("products")
 
   const handleAttachCatalog = (product: Product) => {
     addMutation.mutate({ product_id: product.id, price: product.price ?? undefined, stock_quantity: 0 }, { onSuccess: () => { toast.success(`Product added to ${shop.name}`); onClose() } })

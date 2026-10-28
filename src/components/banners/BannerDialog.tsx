@@ -391,7 +391,7 @@ export function BannerDialog({ open, onClose, banner }: BannerDialogProps) {
           {/* Banner Image */}
           <div className="space-y-2">
             <Label>Banner Image *</Label>
-            <ImageUpload
+            <ImageUpload kind="banners"
               value={form.imageUrl || null}
               onChange={(url) => setForm({ ...form, imageUrl: url ?? "" })}
               label="Upload Banner Image"

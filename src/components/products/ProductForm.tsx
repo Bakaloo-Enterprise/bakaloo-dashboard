@@ -906,7 +906,7 @@ export function ProductForm({
               </div>
               <div className="space-y-2">
                 <Label>Brand Logo Upload</Label>
-                <ImageUpload
+                <ImageUpload kind="products"
                   value={form.brandLogoUrl || null}
                   onChange={(url) => set("brandLogoUrl", url ?? "")}
                   label="Upload Logo"

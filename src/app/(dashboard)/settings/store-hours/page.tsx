@@ -375,7 +375,7 @@ export default function StoreHoursPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <ImageUpload
+          <ImageUpload kind="banners"
             value={closedBannerImage}
             onChange={canManage ? setClosedBannerImage : () => {}}
             label="Upload Closed Banner"

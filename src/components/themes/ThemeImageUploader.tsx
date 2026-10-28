@@ -46,7 +46,7 @@ export function ThemeImageUploader({
 
     try {
       const result = shouldUseImageUpload
-        ? await uploadImage(file, setProgress)
+        ? await uploadImage(file, setProgress, "themes")
         : await uploadFile(file, setProgress)
       setProgress(100)
       onChange(result.url)

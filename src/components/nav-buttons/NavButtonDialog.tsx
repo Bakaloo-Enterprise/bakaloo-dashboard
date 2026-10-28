@@ -240,7 +240,7 @@ export function NavButtonDialog({ open, onClose, navButton, defaultPlacement }: 
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>Icon image *</Label>
-                <ImageUpload
+                <ImageUpload kind="nav-buttons"
                   value={form.customIconActiveUrl || null}
                   onChange={(url) => setForm({ ...form, customIconActiveUrl: url ?? undefined })}
                   label="Upload icon"
@@ -254,7 +254,7 @@ export function NavButtonDialog({ open, onClose, navButton, defaultPlacement }: 
               </div>
               <div className="space-y-1.5">
                 <Label>Outline variant (optional)</Label>
-                <ImageUpload
+                <ImageUpload kind="nav-buttons"
                   value={form.customIconInactiveUrl || null}
                   onChange={(url) => setForm({ ...form, customIconInactiveUrl: url ?? undefined })}
                   label="Upload outline icon"

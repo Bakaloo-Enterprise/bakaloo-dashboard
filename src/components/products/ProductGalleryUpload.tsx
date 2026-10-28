@@ -159,7 +159,7 @@ export function ProductGalleryUpload({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [urlInput, setUrlInput] = useState("")
-  const uploadMutation = useUploadImage()
+  const uploadMutation = useUploadImage("products")
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

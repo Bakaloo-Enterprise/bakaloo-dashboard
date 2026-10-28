@@ -1,3 +1,11 @@
+// Self-hosted media server (replaces Cloudinary). Set NEXT_PUBLIC_MEDIA_BASE_URL, e.g. https://media.bakaloo.in
+const mediaBase = process.env.NEXT_PUBLIC_MEDIA_BASE_URL
+const mediaPatterns = [{ protocol: "https", hostname: "media.bakaloo.in" }]
+if (mediaBase) {
+  const u = new URL(mediaBase)
+  mediaPatterns.push({ protocol: u.protocol.replace(":", ""), hostname: u.hostname, ...(u.port ? { port: u.port } : {}) })
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -17,6 +25,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      ...mediaPatterns,
     ],
   },
   // Proxy API requests to backend (optional — can also use direct CORS)

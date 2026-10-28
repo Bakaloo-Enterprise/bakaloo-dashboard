@@ -87,7 +87,7 @@ export function BundleDialog({ open, onClose }: BundleDialogProps) {
           </div>
           <div className="space-y-2">
             <Label>Bundle Image</Label>
-            <ImageUpload
+            <ImageUpload kind="categories"
               value={form.image_url || null}
               onChange={(url) => setForm({ ...form, image_url: url ?? "" })}
               label="Upload Bundle Image"

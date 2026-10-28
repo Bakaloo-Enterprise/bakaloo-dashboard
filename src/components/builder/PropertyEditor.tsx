@@ -783,7 +783,7 @@ function PromoCustomImagesEditor({
   const fileRef = useRef<HTMLInputElement>(null)
   const [urlInput, setUrlInput] = useState("")
   const [uploading, setUploading] = useState(false)
-  const uploadMutation = useUploadImage()
+  const uploadMutation = useUploadImage("themes")
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])

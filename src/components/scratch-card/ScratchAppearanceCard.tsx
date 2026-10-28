@@ -39,7 +39,7 @@ interface ScratchAppearanceCardProps {
  */
 export function ScratchAppearanceCard({ draft, onChange, canManage }: ScratchAppearanceCardProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const uploadMutation = useUploadImage()
+  const uploadMutation = useUploadImage("spin-scratch")
   const previewSrc = sanitizeCloudinaryUrl(draft.coverImageUrl)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {

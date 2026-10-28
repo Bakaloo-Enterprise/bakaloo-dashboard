@@ -315,7 +315,7 @@ export default function CategoriesPage() {
 
             <div className="space-y-2">
               <Label>Category Image</Label>
-              <ImageUpload
+              <ImageUpload kind="categories"
                 value={form.image_url || null}
                 onChange={(url) => set("image_url", url ?? "")}
                 label="Upload Category Image"
