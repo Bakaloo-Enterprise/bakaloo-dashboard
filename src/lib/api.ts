@@ -151,6 +151,22 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // ── 403 DEMO_READ_ONLY ────────────────────────────────────────────
+    // The demo viewer account can look at everything but not change or send anything (save, delete, block, credit,
+    // WhatsApp / notification sends, theme publish ...). One fixed toast id so repeated clicks don't stack.
+    if (status === 403 && code === "DEMO_READ_ONLY") {
+      // Pages show their own error toast with the server message too; after a beat, replace everything with one
+      // clear message so the demo viewer never sees two stacked.
+      window.setTimeout(() => {
+        toast.dismiss()
+        toast.error("Submit is not eligible for this account", {
+          id: "demo-read-only",
+          description: "This is a view-only demo account. You can review everything, but nothing can be changed or sent.",
+        })
+      }, 150)
+      return Promise.reject(error)
+    }
+
     // ── 403 PERMISSION_DENIED ─────────────────────────────────────────
     // Server-side RBAC rejection — surface a Sonner toast with the
     // server-provided message. Do NOT clear auth (Req 15.3 / design §2).

@@ -32,7 +32,7 @@ export function DemoHeaderBadge() {
   return (
     <div
       data-testid="demo-header-badge"
-      title="Orders, wallet, refunds and chats show demo customers only. Other customers' contact details are hidden."
+      title="View-only demo account. Orders, wallet, refunds and chats show demo customers only; other customers' contact details are hidden."
       className="hidden items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 sm:flex"
     >
       <FlaskConical className="h-3.5 w-3.5" />
@@ -51,10 +51,10 @@ export function DemoModeGuard() {
     const observer = new MutationObserver(() => {
       if (queued) return
       queued = true
-      requestAnimationFrame(() => {
+      window.setTimeout(() => {
         queued = false
         blurMasked(document.body)
-      })
+      }, 50)
     })
     observer.observe(document.body, { childList: true, subtree: true, characterData: true })
     return () => observer.disconnect()
@@ -78,7 +78,7 @@ export function DemoModeGuard() {
       className="mb-3 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900"
     >
       <Eye className="h-4 w-4" />
-      Demo account — you are viewing demo data, not production. Orders, wallet transactions, refunds and chats are shown for the demo customers only; every other customer's contact details are hidden.
+      Demo account (view-only) — this is demo data, not production. You can review everything, but saving, deleting, sending and publishing are switched off. Orders, wallet, refunds and chats show the demo customers only; every other customer's contact details are hidden.
     </div>
   )
 }
