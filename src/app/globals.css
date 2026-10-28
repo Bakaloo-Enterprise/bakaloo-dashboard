@@ -165,3 +165,10 @@
   outline: 2px solid var(--brand-500);
   outline-offset: 2px;
 }
+
+/* Demo viewer accounts: values the API masked ("98••••••12") are also blurred on screen. */
+.demo-blur {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}

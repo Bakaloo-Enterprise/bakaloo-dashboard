@@ -1,5 +1,6 @@
 "use client"
 
+import { DemoHeaderBadge } from "@/components/shared/DemoModeGuard"
 import { Bell, Menu, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -59,6 +60,7 @@ export function Header() {
       <GlobalSearch />
 
       <div className="flex items-center gap-2 ml-auto">
+        <DemoHeaderBadge />
         {/* Shop scope indicator — shows shop name + branch_code in STORE_MODE.
             Self-gates: renders nothing in HQ_MODE / ALL_SHOPS (Task 17.6). */}
         <ShopScopeIndicator />

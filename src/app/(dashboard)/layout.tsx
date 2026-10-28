@@ -13,6 +13,7 @@ import { SocketEventBridge } from "@/components/layout/socket-event-bridge"
 import { SocketProvider } from "@/components/providers/SocketProvider"
 import { ErrorBoundary } from "@/components/shared/error-boundary"
 import { ViewerBanner } from "@/components/shared/PermissionGate"
+import { DemoModeGuard } from "@/components/shared/DemoModeGuard"
 import { ActiveShopCookieSync } from "@/hooks/useActiveShopCookieSync"
 import { useAuthStore } from "@/store/auth.store"
 import { useSidebarStore } from "@/store/sidebar.store"
@@ -161,6 +162,7 @@ export default function DashboardLayout({
               className="p-4 md:p-6"
             >
               <ErrorBoundary>
+                <DemoModeGuard />
                 <ViewerBanner />
                 {/* Non-removable scope confirmation chip — mounted once so
                     every existing surface (orders, products, customers,

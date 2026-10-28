@@ -18,6 +18,8 @@ export interface FeatureState {
 
 export interface FeatureAccess {
   isDeveloper: boolean
+  /** Restricted demo login: sees only the demo customers, with every other number blurred. */
+  isDemoViewer?: boolean
   features: Record<string, FeatureState>
 }
 
