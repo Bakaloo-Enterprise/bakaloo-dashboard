@@ -1,6 +1,7 @@
-// Self-hosted media server (replaces Cloudinary). Set NEXT_PUBLIC_MEDIA_BASE_URL, e.g. https://media.bakaloo.in
+// Self-hosted media server (replaces Cloudinary). Nothing is allowed until NEXT_PUBLIC_MEDIA_BASE_URL is set,
+// to whatever address the images end up on (e.g. https://api.bakaloo.in/media).
 const mediaBase = process.env.NEXT_PUBLIC_MEDIA_BASE_URL
-const mediaPatterns = [{ protocol: "https", hostname: "media.bakaloo.in" }]
+const mediaPatterns = []
 if (mediaBase) {
   const u = new URL(mediaBase)
   mediaPatterns.push({ protocol: u.protocol.replace(":", ""), hostname: u.hostname, ...(u.port ? { port: u.port } : {}) })
