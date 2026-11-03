@@ -72,6 +72,13 @@ export interface ForecastItem {
   stock: number
   incoming: number
   expectedTonight: number
+  /** the plan row: what is on the shelf when the covered days start, expected sales over them, usual spoilage, price per unit, expected revenue, back-test accuracy */
+  opening: number
+  demand: number
+  wasteQty: number
+  price: number
+  estRevenue: number
+  confidencePct: number | null
   avgPerDay: number
   today: number
   tomorrow: number
@@ -92,7 +99,7 @@ export interface Forecast {
   horizon: number
   cover: number
   shareOfDayLeft: number
-  totals: { toBuy: number; buyValue: number; urgent: number; short: number; willSpoil: number }
+  totals: { toBuy: number; buyValue: number; estRevenue: number; urgent: number; short: number; willSpoil: number }
   accuracy: { accuracyPct: number | null; soldUnits: number; missedUnits: number }
   items: ForecastItem[]
   definitions: Record<string, string>
@@ -114,7 +121,8 @@ export interface Pnl {
   grossMarginPct: number | null
   wastage: number
   afterWastage: number
-  expenses: { fixed: number; variable: number; total: number; byCategory: Array<{ category: ExpenseCategory; label: string; kind: "FIXED" | "VARIABLE"; amount: number; count: number }> }
+  expenses: { fixed: number; variable: number; total: number; byCategory: Array<{ category: string; label: string; kind: "FIXED" | "VARIABLE"; amount: number; count: number }> }
+  returns: number
   operatingProfit: number
   otherIncome: number
   netProfit: number
@@ -131,7 +139,7 @@ export interface AccountingSummary {
   closed: { at: string; by: string | null } | null
   pnl: Pnl
   position: Record<Box, BoxPosition>
-  counts: { expenses: number; cashEntries: number; codOrders: number; gatewayPayments: number }
+  counts: { expenses: number; cashEntries: number; journalEntries: number; codOrders: number; gatewayPayments: number }
   warnings: string[]
   notes: string[]
 }
@@ -160,6 +168,30 @@ export interface CashList { from: string; to: string; items: CashEntry[]; kinds:
 
 export interface JournalRow { date: string; account: Box; direction: "in" | "out"; label: string; party: string | null; amount: number; source: string }
 export interface Journal { month: string; label: string; from: string; to: string; rows: JournalRow[]; totals: Record<Box, { in: number; out: number }> }
+
+// ── Double-entry journal ──
+export type JournalType = "EXPENSE" | "CONTRA" | "PROMOTER_CONTRIBUTION" | "PROMOTER_WITHDRAWAL" | "OTHER_INCOME" | "CUSTOMER_RECEIPT" | "VENDOR_PAYMENT" | "PETTY_CASH" | "OPENING_BALANCE" | "COMMISSION" | "REFUND"
+export type CostBehavior = "fixed" | "variable" | "capital" | "transfer"
+export interface JournalOptions {
+  types: Array<{ id: JournalType; label: string; debit: string; credit: string; behavior: CostBehavior; category: string }>
+  categories: string[]
+  accounts: string[]
+  departments: string[]
+  behaviors: Array<{ id: CostBehavior; label: string }>
+  boxes: Record<string, Box>
+}
+export interface JournalEntry {
+  id: string; date: string; type: JournalType; typeLabel: string; description: string; category: string; amount: number
+  debitAccount: string; creditAccount: string; costBehavior: CostBehavior; department: string; shopId: string | null; shop: string | null
+  counterparty: string | null; reference: string | null; notes: string | null; createdBy: string | null; createdAt: string
+  voided: boolean; voidReason: string | null; voidedBy: string | null
+}
+export interface TrialBalance { rows: Array<{ account: string; totalDebit: number; totalCredit: number; debit: number; credit: number }>; debit: number; credit: number }
+export interface JournalEntryList { from: string; to: string; total: number; items: JournalEntry[]; trialBalance: TrialBalance }
+export interface NewJournalEntry {
+  entryOn: string; type: JournalType; description: string; category?: string; amount: number; debitAccount: string; creditAccount: string
+  costBehavior: CostBehavior; department: string; shopId?: string; counterparty?: string; reference?: string; notes?: string
+}
 
 // ── Data Explorer ──
 export type ExplorerKind = "orders" | "lines" | "movements" | "purchases" | "refunds" | "expenses"

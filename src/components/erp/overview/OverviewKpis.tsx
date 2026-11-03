@@ -15,7 +15,7 @@ export function rangeText(d: Pick<OverviewData, "from" | "to" | "days">): string
 function HeroRevenue({ d, className }: { d: OverviewData; className?: string }) {
   const spark = d.series.map((x) => ({ v: x.net }))
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl p-5 text-white shadow-lg", className)} style={{ background: "linear-gradient(135deg,#0f6b34 0%,#1a7a3c 45%,#2e9e54 100%)" }}>
+    <div className={cn("relative overflow-hidden rounded-2xl p-5 text-white shadow-lg", className)} style={{ background: "linear-gradient(135deg,#17483a 0%,#215c49 45%,#2d7a5d 100%)" }}>
       {spark.length > 1 && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 opacity-40" aria-hidden>
           <ResponsiveContainer width="100%" height="100%">

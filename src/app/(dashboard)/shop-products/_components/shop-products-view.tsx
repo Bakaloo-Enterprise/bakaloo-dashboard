@@ -66,6 +66,7 @@ import { t } from "@/lib/i18n"
 import type { ShopProductsListParams } from "@/services/shop-products.service"
 import type { ShopProduct } from "@/types"
 
+import { BulkImportButton } from "@/components/erp/skin/BulkImportDialog"
 import { AddProductDialog } from "./add-product-dialog"
 import {
   ProductActions,
@@ -312,6 +313,8 @@ export function ShopProductsView({ embedded = false }: ShopProductsViewProps) {
           count: visibleLowStockCount,
         })}
       </Badge>
+
+      {canWrite ? <BulkImportButton /> : null}
 
       {canWrite ? (
         <Button

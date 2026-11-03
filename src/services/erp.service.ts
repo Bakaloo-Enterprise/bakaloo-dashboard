@@ -13,11 +13,15 @@ export const saveTargets = async (productId: string, body: { marginPct: number |
   (await api.patch<ApiResponse<{ productId: string; marginPct: number | null; wastagePct: number | null }>>(`/admin/erp/ops/products/${productId}/targets`, body)).data.data
 
 // ── Accounting ──
-import type { AccountingSummary, CashKind, CashList, Box, ExpenseCategory, ExpenseList, Journal, PayVia } from "@/types/erp.types"
+import type { AccountingSummary, CashKind, CashList, Box, ExpenseCategory, ExpenseList, Journal, JournalEntryList, JournalOptions, NewJournalEntry, PayVia } from "@/types/erp.types"
 
 export const getAccountingSummary = (month?: string) => get<AccountingSummary>("/accounting/summary", clean({ month }))
 export const getJournal = (month?: string) => get<Journal>("/accounting/journal", clean({ month }))
 export const getExpenses = (p: { from?: string; to?: string; category?: string; shopId?: string; includeVoided?: boolean }) => get<ExpenseList>("/accounting/expenses", clean(p))
+export const getJournalEntries = (p: { from?: string; to?: string; type?: string; department?: string; shopId?: string; q?: string; includeVoided?: boolean }) => get<JournalEntryList>("/accounting/journal-entries", clean(p))
+export const getJournalOptions = () => get<JournalOptions>("/accounting/journal-options")
+export const createJournalEntry = async (b: NewJournalEntry) => (await api.post<ApiResponse<{ id: string }>>("/admin/erp/accounting/journal-entries", clean(b))).data.data
+export const voidJournalEntry = async (id: string, reason: string) => (await api.post<ApiResponse<{ id: string }>>(`/admin/erp/accounting/journal-entries/${id}/void`, { reason })).data.data
 export const getCashEntries = (p: { from?: string; to?: string; includeVoided?: boolean }) => get<CashList>("/accounting/cash-entries", clean(p))
 export const createExpense = async (b: { spentOn: string; category: ExpenseCategory; amount: number; paidVia: PayVia; shopId?: string; party?: string; note?: string }) =>
   (await api.post<ApiResponse<{ id: string }>>("/admin/erp/accounting/expenses", clean(b))).data.data

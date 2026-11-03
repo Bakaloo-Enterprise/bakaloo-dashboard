@@ -4,7 +4,7 @@ import { IndianRupee, PiggyBank, Receipt, TrendingDown, TrendingUp } from "lucid
 import type { AccountingSummary } from "@/types/erp.types"
 import { inr, pctText } from "../format"
 import { Bar, Help, Panel, Tile } from "../kit"
-import { EXPENSE_META } from "./meta"
+import { metaFor } from "./meta"
 import { cn } from "@/lib/utils"
 
 function Step({ label, value, sign, strong = false, sub, help }: { label: string; value: number; sign?: "+" | "−" | "="; strong?: boolean; sub?: string; help?: string }) {
@@ -46,7 +46,7 @@ export function PnlPanel({ s }: { s: AccountingSummary }) {
           <Panel title="Where the running costs go" hint={p.expenses.byCategory.length ? undefined : "No expenses entered for this month yet."}>
             <ul className="space-y-3">
               {p.expenses.byCategory.map((c) => {
-                const m = EXPENSE_META[c.category]
+                const m = metaFor(c.category, c.label)
                 return (
                   <li key={c.category}>
                     <div className="mb-1 flex items-center justify-between gap-2 text-sm"><span className="flex items-center gap-2 font-medium"><m.icon className="h-4 w-4 text-muted-foreground" aria-hidden />{c.label}<span className="text-[10px] uppercase tracking-wide text-muted-foreground">{c.kind === "FIXED" ? "fixed" : "varies"}</span></span><b className="tabular-nums">{inr(c.amount)}</b></div>

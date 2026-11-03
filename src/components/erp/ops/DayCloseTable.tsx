@@ -35,7 +35,7 @@ function PriceChip({ r }: { r: DayCloseItem }) {
   return <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold", TONE.green.soft, TONE.green.text)}><BadgeCheck className="h-3.5 w-3.5" aria-hidden />Price is right</span>
 }
 
-function TargetsDialog({ item, onClose }: { item: DayCloseItem | null; onClose: () => void }) {
+export function TargetsDialog({ item, onClose }: { item: DayCloseItem | null; onClose: () => void }) {
   const save = useSaveTargets()
   const [m, setM] = useState("")
   const [w, setW] = useState("")

@@ -45,6 +45,9 @@ import {
   getAgents,
   getCrmMe,
   getLabels,
+  getSavedFilters,
+  createSavedFilter,
+  deleteSavedFilter,
   getWorkload,
   getTemplates,
   getTemplate,
@@ -86,7 +89,7 @@ import {
   sendMedia,
 } from "@/services/whatsapp-crm.service"
 import { qk } from "@/lib/query-keys"
-import type { AnalyticsQuery, BreakdownBy, RateCategory, ProspectRowStatus, CampaignInput, CampaignStatus, WorkflowInput, TemplateFilters, TemplateFormError, TemplateInput, BotAreaInput, BotLanguage, BotRuleInput, BotSettingsInput, ConversationFilters, CrmPermission, LabelInput, PipelineBoard, PipelineFilters } from "@/types/whatsapp-crm.types"
+import type { AnalyticsQuery, BreakdownBy, RateCategory, ProspectRowStatus, CampaignInput, CampaignStatus, WorkflowInput, TemplateFilters, TemplateFormError, TemplateInput, BotAreaInput, BotLanguage, BotRuleInput, BotSettingsInput, ConversationFilters, InboxCriteria, CrmPermission, LabelInput, PipelineBoard, PipelineFilters } from "@/types/whatsapp-crm.types"
 
 export function errorMessage(error: unknown): string {
   const resp = (error as { response?: { data?: { message?: string; details?: unknown } } })?.response
@@ -201,6 +204,31 @@ export function useAgents() {
 
 export function useLabels() {
   return useQuery({ queryKey: qk.crmLabels(), queryFn: getLabels, staleTime: 30_000 })
+}
+
+export function useSavedFilters() {
+  return useQuery({ queryKey: ["crm", "saved-filters"] as const, queryFn: getSavedFilters, staleTime: 60_000 })
+}
+
+export function useCreateSavedFilter() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, criteria }: { name: string; criteria: InboxCriteria }) => createSavedFilter(name, criteria),
+    onSuccess: () => {
+      toast.success("Filter saved")
+      qc.invalidateQueries({ queryKey: ["crm", "saved-filters"] })
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useDeleteSavedFilter() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteSavedFilter(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crm", "saved-filters"] }),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
 }
 
 export function useWorkload(enabled = true) {

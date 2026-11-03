@@ -1,4 +1,4 @@
-import { Banknote, Bike, Coins, Home, Landmark, Megaphone, MoreHorizontal, Package, PiggyBank, Wifi, Wrench, Zap, Users, CreditCard, Truck, ArrowDownToLine, ArrowUpFromLine, Scale, type LucideIcon } from "lucide-react"
+import { ReceiptText, Banknote, Bike, Coins, Home, Landmark, Megaphone, MoreHorizontal, Package, PiggyBank, Wifi, Wrench, Zap, Users, CreditCard, Truck, ArrowDownToLine, ArrowUpFromLine, Scale, type LucideIcon } from "lucide-react"
 import type { Box, CashKind, ExpenseCategory, PayVia } from "@/types/erp.types"
 import type { Tone } from "../kit"
 
@@ -16,6 +16,9 @@ export const EXPENSE_META: Record<ExpenseCategory, { icon: LucideIcon; tone: Ton
   MAINTENANCE: { icon: Wrench, tone: "amber", short: "Repairs" },
   OTHER: { icon: MoreHorizontal, tone: "slate", short: "Other" },
 }
+
+/** Journal expenses carry the category the user typed, which has no icon of its own. */
+export const metaFor = (category: string, label: string) => EXPENSE_META[category as ExpenseCategory] ?? { icon: ReceiptText, tone: "slate" as Tone, short: label }
 
 export const VIA_LABEL: Record<PayVia, string> = { CASH: "Cash", UPI: "UPI", BANK: "Bank" }
 

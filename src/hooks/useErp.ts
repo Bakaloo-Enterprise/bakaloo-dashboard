@@ -28,6 +28,8 @@ export function useSaveTargets() {
 export const useAccountingSummary = (month: string) => useQuery({ queryKey: ["erp", "acc-summary", month], queryFn: () => S.getAccountingSummary(month), placeholderData: (p) => p })
 export const useJournal = (month: string, enabled = true) => useQuery({ queryKey: ["erp", "acc-journal", month], queryFn: () => S.getJournal(month), enabled, placeholderData: (p) => p })
 export const useExpenses = (p: { from?: string; to?: string; category?: string; shopId?: string; includeVoided?: boolean }) => useQuery({ queryKey: ["erp", "acc-expenses", p], queryFn: () => S.getExpenses(p), placeholderData: (prev) => prev })
+export const useJournalEntries = (p: { from?: string; to?: string; type?: string; department?: string; shopId?: string; q?: string; includeVoided?: boolean }) => useQuery({ queryKey: ["erp", "acc-journal-entries", p], queryFn: () => S.getJournalEntries(p), placeholderData: (prev) => prev })
+export const useJournalOptions = () => useQuery({ queryKey: ["erp", "acc-journal-options"], queryFn: S.getJournalOptions, staleTime: Infinity })
 export const useCashEntries = (p: { from?: string; to?: string; includeVoided?: boolean }) => useQuery({ queryKey: ["erp", "acc-cash", p], queryFn: () => S.getCashEntries(p), placeholderData: (prev) => prev })
 
 /** Every accounting change moves the month's profit and balances, so each success re-reads all of "erp". */
@@ -38,6 +40,8 @@ export function useAccountingMutations() {
   return {
     createExpense: useMutation({ mutationFn: S.createExpense, ...base, onSuccess: done("Expense saved") }),
     voidExpense: useMutation({ mutationFn: (v: { id: string; reason: string }) => S.voidExpense(v.id, v.reason), ...base, onSuccess: done("Expense cancelled") }),
+    createJournal: useMutation({ mutationFn: S.createJournalEntry, ...base, onSuccess: done("Balanced entry posted") }),
+    voidJournal: useMutation({ mutationFn: (v: { id: string; reason: string }) => S.voidJournalEntry(v.id, v.reason), ...base, onSuccess: done("Entry cancelled") }),
     createCash: useMutation({ mutationFn: S.createCashEntry, ...base, onSuccess: done("Entry saved") }),
     voidCash: useMutation({ mutationFn: (v: { id: string; reason: string }) => S.voidCashEntry(v.id, v.reason), ...base, onSuccess: done("Entry cancelled") }),
   }

@@ -15,6 +15,8 @@ export interface OverviewDay {
   refunds: number
   net: number
   cancelled: number
+  /** Every cancellation that day, including orders stopped before confirmation. */
+  cancelledAll: number
   cod: number
 }
 
@@ -27,6 +29,15 @@ export interface OverviewData {
   previous: { from: string; to: string }
   money: { grossSales: number; refunds: number; netRevenue: number; cancelledValue: number; avgOrderValue: number | null }
   orders: { placed: number; fullyRefunded: number; net: number; refundEvents: number; cancelled: number }
+  /** All cancelled orders in the period (any stage), never counted as orders or sales. */
+  cancellations: {
+    orders: number; value: number
+    beforeConfirm: { orders: number; value: number }
+    afterConfirm: { orders: number; value: number }
+    byReason: Array<{ reason: string; orders: number; value: number }>
+  }
+  /** Money handed back on delivered orders — a different thing from a cancellation. */
+  returns: { orders: number; value: number; fullyRefundedOrders: number }
   comparison: { netRevenue: OverviewChange; orders: OverviewChange; avgOrderValue: OverviewChange; refunds: OverviewChange }
   customers: { buyers: number; newBuyers: number; repeatBuyers: number; repeatRatePct: number | null; registered: number | null; joinedInPeriod: number | null }
   series: OverviewDay[]

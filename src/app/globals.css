@@ -11,43 +11,43 @@
 @layer base {
   :root {
     /* ── Shadcn base variables (green theme) ── */
-    --background: 210 20% 98%;
-    --foreground: 220 14% 10%;
+    --background: 0 0% 100%;
+    --foreground: 217 33% 17%;
     --card: 0 0% 100%;
-    --card-foreground: 220 14% 10%;
+    --card-foreground: 217 33% 17%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 14% 10%;
-    --primary: 148 66% 29%;
+    --popover-foreground: 217 33% 17%;
+    --primary: 161 47% 24%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 16% 96%;
-    --secondary-foreground: 220 14% 10%;
-    --muted: 210 16% 96%;
-    --muted-foreground: 215 14% 45%;
-    --accent: 145 60% 93%;
-    --accent-foreground: 148 66% 25%;
+    --secondary: 80 31% 94%;
+    --secondary-foreground: 217 33% 17%;
+    --muted: 80 31% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 82 56% 91%;
+    --accent-foreground: 161 47% 22%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 218 13% 90%;
-    --input: 218 13% 90%;
-    --ring: 148 66% 29%;
-    --chart-1: 148 66% 29%;
-    --chart-2: 43 96% 56%;
-    --chart-3: 217 91% 60%;
+    --border: 87 19% 89%;
+    --input: 87 19% 89%;
+    --ring: 161 47% 24%;
+    --chart-1: 161 47% 24%;
+    --chart-2: 83 85% 34%;
+    --chart-3: 192 91% 36%;
     --chart-4: 263 70% 58%;
-    --chart-5: 160 84% 39%;
-    --radius: 0.5rem;
+    --chart-5: 25 95% 53%;
+    --radius: 0.625rem;
 
     /* ── Brand Colors (direct hex for custom components) ── */
-    --brand-50: #E8F5E9;
-    --brand-100: #C8E6C9;
-    --brand-200: #A5D6A7;
-    --brand-300: #81C784;
-    --brand-400: #66BB6A;
-    --brand-500: #1A7A3C;
-    --brand-600: #158034;
-    --brand-700: #10602A;
-    --brand-800: #0B4020;
-    --brand-900: #062010;
+    --brand-50: #E9F3ED;
+    --brand-100: #D3E7DC;
+    --brand-200: #A7CFBA;
+    --brand-300: #7BB698;
+    --brand-400: #4F9D77;
+    --brand-500: #2D7A5D;
+    --brand-600: #215C49;
+    --brand-700: #1A4A3B;
+    --brand-800: #133829;
+    --brand-900: #0C261B;
 
     /* ── Semantic ── */
     --success: #10B981;
@@ -62,7 +62,7 @@
     --purple-bg: #F5F3FF;
 
     /* ── Surface ── */
-    --surface-bg: #F0F4F8;
+    --surface-bg: #FFFFFF;
     --surface-card: #FFFFFF;
     --surface-sidebar: #FFFFFF;
 
@@ -81,35 +81,35 @@
 
   .dark {
     /* ── Shadcn base variables (dark green theme) ── */
-    --background: 224 14% 10%;
-    --foreground: 210 20% 95%;
-    --card: 224 14% 13%;
-    --card-foreground: 210 20% 95%;
-    --popover: 224 14% 13%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 148 66% 40%;
+    --background: 108 22% 5%;
+    --foreground: 210 22% 90%;
+    --card: 108 20% 8%;
+    --card-foreground: 210 22% 90%;
+    --popover: 108 20% 8%;
+    --popover-foreground: 210 22% 90%;
+    --primary: 161 47% 34%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 224 14% 17%;
-    --secondary-foreground: 210 20% 95%;
-    --muted: 224 14% 17%;
-    --muted-foreground: 215 14% 55%;
-    --accent: 148 40% 18%;
-    --accent-foreground: 148 66% 70%;
+    --secondary: 108 22% 10%;
+    --secondary-foreground: 210 22% 90%;
+    --muted: 108 22% 10%;
+    --muted-foreground: 215 12% 58%;
+    --accent: 108 25% 14%;
+    --accent-foreground: 82 70% 80%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 224 14% 20%;
-    --input: 224 14% 20%;
-    --ring: 148 66% 40%;
-    --chart-1: 148 66% 40%;
-    --chart-2: 43 96% 56%;
-    --chart-3: 217 91% 60%;
-    --chart-4: 263 70% 58%;
-    --chart-5: 160 84% 39%;
+    --border: 91 22% 16%;
+    --input: 91 22% 16%;
+    --ring: 161 47% 40%;
+    --chart-1: 161 47% 40%;
+    --chart-2: 83 85% 45%;
+    --chart-3: 192 91% 50%;
+    --chart-4: 263 70% 66%;
+    --chart-5: 25 95% 60%;
 
     /* ── Brand Colors (dark mode) ── */
-    --brand-50: rgba(26, 122, 60, 0.15);
-    --brand-100: rgba(26, 122, 60, 0.25);
-    --brand-500: #2E9E54;
+    --brand-50: rgba(33, 92, 73, 0.18);
+    --brand-100: rgba(33, 92, 73, 0.30);
+    --brand-500: #3E9A78;
 
     /* ── Semantic (dark mode) ── */
     --success: #34D399;
@@ -124,9 +124,9 @@
     --purple-bg: rgba(139, 92, 246, 0.15);
 
     /* ── Surface (dark mode) ── */
-    --surface-bg: #0f1117;
-    --surface-card: hsl(224 14% 13%);
-    --surface-sidebar: hsl(224 14% 11%);
+    --surface-bg: #0B0F0A;
+    --surface-card: #121811;
+    --surface-sidebar: #0F140E;
 
     /* ── Shadows (dark mode) ── */
     --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
@@ -156,8 +156,8 @@
 
 /* ── Stat card green gradient ── */
 .stat-card-primary {
-  background: linear-gradient(135deg, #1A7A3C 0%, #2E9E54 100%);
-  box-shadow: 0 8px 24px rgba(26,122,60,0.25);
+  background: linear-gradient(135deg, #215C49 0%, #2D7A5D 100%);
+  box-shadow: 0 8px 24px rgba(33,92,73,0.25);
 }
 
 /* ── Focus ring ── */
@@ -172,3 +172,83 @@
   user-select: none;
   pointer-events: none;
 }
+
+/* ── WhatsApp-style inbox (/whatsapp-crm/inbox): colours follow WhatsApp Web, light and dark ── */
+.wa-app {
+  --wa-app-bg: #d1d7db;
+  --wa-panel: #ffffff;
+  --wa-panel-header: #f0f2f5;
+  --wa-rail: #f0f2f5;
+  --wa-border: #e9edef;
+  --wa-hover: #f5f6f6;
+  --wa-selected: #f0f2f5;
+  --wa-input-bg: #f0f2f5;
+  --wa-chat-bg: #efeae2;
+  --wa-doodle: #d3c8b6;
+  --wa-doodle-opacity: 0.55;
+  --wa-bubble-in: #ffffff;
+  --wa-bubble-out: #d9fdd3;
+  --wa-text: #111b21;
+  --wa-text-out: #111b21;
+  --wa-secondary: #667781;
+  --wa-green: #00a884;
+  --wa-green-dark: #008069;
+  --wa-unread: #25d366;
+  --wa-tick: #53bdeb;
+  --wa-chip-bg: #f0f2f5;
+  --wa-chip-active-bg: #d9fdd3;
+  --wa-chip-active-text: #008069;
+  --wa-date-pill: #ffffffe6;
+  --wa-composer: #f0f2f5;
+  --wa-avatar: #dfe5e7;
+  --wa-avatar-icon: #ffffff;
+  --wa-banner: #fff5c4;
+  color: var(--wa-text);
+  font-family: "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell, "Fira Sans", sans-serif;
+}
+.dark .wa-app {
+  --wa-app-bg: #0b141a;
+  --wa-panel: #111b21;
+  --wa-panel-header: #202c33;
+  --wa-rail: #202c33;
+  --wa-border: #222d34;
+  --wa-hover: #202c33;
+  --wa-selected: #2a3942;
+  --wa-input-bg: #202c33;
+  --wa-chat-bg: #0b141a;
+  --wa-doodle: #8696a0;
+  --wa-doodle-opacity: 0.1;
+  --wa-bubble-in: #202c33;
+  --wa-bubble-out: #005c4b;
+  --wa-text: #e9edef;
+  --wa-text-out: #e9edef;
+  --wa-secondary: #8696a0;
+  --wa-green: #00a884;
+  --wa-green-dark: #00a884;
+  --wa-chip-bg: #202c33;
+  --wa-chip-active-bg: #103529;
+  --wa-chip-active-text: #25d366;
+  --wa-date-pill: #182229e6;
+  --wa-composer: #202c33;
+  --wa-avatar: #6a7175;
+  --wa-avatar-icon: #cfd4d6;
+  --wa-banner: #3a3524;
+}
+.wa-doodle { position: relative; background-color: var(--wa-chat-bg); }
+.wa-doodle::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-color: var(--wa-doodle); opacity: var(--wa-doodle-opacity);
+  -webkit-mask-image: url(/whatsapp/wa-doodle.svg); mask-image: url(/whatsapp/wa-doodle.svg);
+  -webkit-mask-size: 360px 360px; mask-size: 360px 360px;
+}
+/* Bubble tails (the little corner on the first bubble of a run) */
+.wa-bubble { position: relative; }
+.wa-bubble.wa-tail-in::before, .wa-bubble.wa-tail-out::before {
+  content: ""; position: absolute; top: 0; width: 8px; height: 13px; background: inherit;
+}
+.wa-bubble.wa-tail-in::before { left: -8px; clip-path: polygon(100% 0, 0 0, 100% 100%); }
+.wa-bubble.wa-tail-out::before { right: -8px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.wa-scroll { scrollbar-width: thin; scrollbar-color: rgba(134,150,160,.45) transparent; }
+.wa-scroll::-webkit-scrollbar { width: 6px; }
+.wa-scroll::-webkit-scrollbar-thumb { background: rgba(134,150,160,.45); border-radius: 3px; }
+.wa-app textarea:focus-visible, .wa-app input:focus-visible { outline: none; }

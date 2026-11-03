@@ -30,7 +30,7 @@ export function ReasonDialog({ open, title, confirm, busy, onClose, onSubmit }: 
   )
 }
 
-function AddExpense({ open, onClose, defaultDate }: { open: boolean; onClose: () => void; defaultDate: string }) {
+export function AddExpense({ open, onClose, defaultDate }: { open: boolean; onClose: () => void; defaultDate: string }) {
   const { createExpense } = useAccountingMutations()
   const shops = useActiveShopsForSwitcher()
   const [category, setCategory] = useState<ExpenseCategory | null>(null)

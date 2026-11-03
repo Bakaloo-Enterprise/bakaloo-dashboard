@@ -75,4 +75,6 @@ export interface RecentOrder {
   payment_method: string
   created_at: string
   item_count: number
+  delivered_at?: string | null
+  cancelled_reason?: string | null
 }

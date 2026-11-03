@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Boxes, Clock, ClipboardList, FileSpreadsheet, Lock, PackageCheck, Send, Plus, Scale, Search, ShoppingCart, Truck, Users } from "lucide-react"
+import { Boxes, Layers, Clock, ClipboardList, FileSpreadsheet, Lock, PackageCheck, Send, Plus, Scale, Search, ShoppingCart, Truck, Users } from "lucide-react"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Forbidden } from "@/components/shared/forbidden"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import { InvoiceButton } from "@/components/business/InvoiceButton"
 import { SuppliersPanel } from "@/components/business/SuppliersPanel"
 import { ReceiveDialog } from "@/components/business/ReceiveDialog"
 import { NewPurchaseDialog } from "@/components/business/NewPurchaseDialog"
+import { BulkPurchaseDialog } from "@/components/erp/skin/BulkPurchaseDialog"
 import { PeriodBar, type PeriodState } from "@/components/business/PeriodBar"
 import { ReconciliationTable } from "@/components/business/ReconciliationTable"
 import { VendorTable } from "@/components/business/VendorTable"
@@ -38,6 +39,7 @@ export default function ProcurementPage() {
   const [search, setSearch] = useState("")
   const [vendorFilter, setVendorFilter] = useState("")
   const [creating, setCreating] = useState(false)
+  const [bulkBuying, setBulkBuying] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [receiving, setReceiving] = useState<import("@/types/business.types").ProcurementEntry | null>(null)
   const [repacking, setRepacking] = useState<import("@/types/business.types").ProcurementEntry | null>(null)
@@ -69,6 +71,7 @@ export default function ProcurementPage() {
     <div className="space-y-4">
       <PageHeader title="Procurement" subtitle="What we bought, from whom, at what cost — and where it went.">
         {manage && <Button variant="outline" className="h-11 border-2 border-green-600 text-green-700 hover:bg-green-50" onClick={() => { setChatId(null); setRequesting(true) }}><ClipboardList className="mr-1.5 h-5 w-5" aria-hidden />New request</Button>}
+        {manage && <Button variant="outline" className="h-11" onClick={() => setBulkBuying(true)}><Layers className="mr-1.5 h-5 w-5" aria-hidden />Bulk purchase</Button>}
         {manage && <Button className="h-11" onClick={() => setCreating(true)}><Plus className="mr-1.5 h-5 w-5" aria-hidden />New purchase</Button>}
       </PageHeader>
 
@@ -150,6 +153,7 @@ export default function ProcurementPage() {
       <DistributeDialog entry={sending} onOpenChange={(o) => !o && setSending(null)} />
       <ReceiveDialog entry={receiving} onOpenChange={(o) => !o && setReceiving(null)} />
       <NewRequirementDialog open={requesting} onOpenChange={setRequesting} conversationId={chatId} />
+      {bulkBuying && <BulkPurchaseDialog open={bulkBuying} onClose={() => setBulkBuying(false)} />}
       <NewPurchaseDialog open={creating} onOpenChange={setCreating} onCreated={(id) => router.push(`/procurement/${id}`)} />
     </div>
   )

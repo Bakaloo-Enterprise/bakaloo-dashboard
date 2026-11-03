@@ -30,6 +30,8 @@ export interface WaConversation {
   bot_state: "BOT" | "HUMAN"
   bot_paused_until: string | null
   bot_handoff_reason: string | null
+  /** Delivery state of the newest message (for the ticks in the chat list); null when there is none. */
+  last_message_status?: MessageStatus | null
 }
 
 export interface WaConversationDetail extends WaConversation {
@@ -67,9 +69,41 @@ export interface ConversationFilters {
   /** a user id, "me" or "unassigned" */
   assignedTo?: string
   labelId?: string
+  /** Any of these labels (Meta ad tags are ordinary labels). */
+  labelIds?: string[]
+  unread?: boolean
+  source?: "ORGANIC" | "META_AD" | "IMPORT" | "APP"
+  windowOpen?: boolean
+  /** true = not yet a Bakaloo customer, false = existing customer */
+  lead?: boolean
+  needsPerson?: boolean
+  /** ISO timestamps on the last message */
+  from?: string
+  to?: string
   search?: string
   limit?: number
   offset?: number
+}
+
+/** What a saved inbox filter remembers. `days` = "last message within N days" (resolved to a date when applied). */
+export interface InboxCriteria {
+  status?: ConversationStatus
+  /** a user id, "me" or "unassigned" */
+  assignedTo?: string
+  labelIds?: string[]
+  unread?: boolean
+  source?: "ORGANIC" | "META_AD" | "IMPORT" | "APP"
+  windowOpen?: boolean
+  lead?: boolean
+  needsPerson?: boolean
+  days?: number
+}
+
+export interface WaSavedFilter {
+  id: string
+  name: string
+  criteria: InboxCriteria
+  created_at: string
 }
 
 export interface WaConfigStatus {

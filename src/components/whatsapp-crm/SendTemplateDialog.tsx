@@ -19,12 +19,14 @@ interface Props {
   windowOpen: boolean
   /** The server will refuse otherwise; hiding the button is just politeness. */
   canSend: boolean
+  /** Replaces the default “Template” button (the WhatsApp-style composer uses an icon). */
+  trigger?: React.ReactNode
 }
 
 const MEDIA_HEADERS = new Set(["IMAGE", "VIDEO", "DOCUMENT"])
 
 /** Pick an APPROVED template, fill it in (customer details are pre-filled), preview, send. */
-export function SendTemplateDialog({ conversationId, consent, windowOpen, canSend }: Props) {
+export function SendTemplateDialog({ conversationId, consent, windowOpen, canSend, trigger }: Props) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -75,9 +77,11 @@ export function SendTemplateDialog({ conversationId, consent, windowOpen, canSen
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={windowOpen ? "outline" : "default"} size="sm" className="h-9" aria-label="Send a template message">
-          <FileText className="mr-1 h-4 w-4" /> Template
-        </Button>
+        {trigger ?? (
+          <Button variant={windowOpen ? "outline" : "default"} size="sm" className="h-9" aria-label="Send a template message">
+            <FileText className="mr-1 h-4 w-4" /> Template
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>

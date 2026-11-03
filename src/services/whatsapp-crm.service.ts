@@ -24,6 +24,8 @@ import type {
   WorkflowCatalog,
   WorkflowInput,
   ConversationFilters,
+  InboxCriteria,
+  WaSavedFilter,
   CrmAgent,
   CrmMe,
   BotEvent,
@@ -110,6 +112,14 @@ export async function getConversations(filters: ConversationFilters = {}) {
   if (filters.search) params.search = filters.search
   if (filters.assignedTo) params.assignedTo = filters.assignedTo
   if (filters.labelId) params.labelId = filters.labelId
+  if (filters.labelIds?.length) params.labelIds = filters.labelIds.join(",")
+  if (filters.unread) params.unread = true
+  if (filters.source) params.source = filters.source
+  if (filters.windowOpen !== undefined) params.windowOpen = filters.windowOpen
+  if (filters.lead !== undefined) params.lead = filters.lead
+  if (filters.needsPerson) params.needsPerson = true
+  if (filters.from) params.from = filters.from
+  if (filters.to) params.to = filters.to
   if (filters.limit) params.limit = filters.limit
   if (filters.offset) params.offset = filters.offset
   const { data } = await api.get<ApiResponse<WaConversation[]>>(`${BASE}/conversations`, { params })
@@ -477,4 +487,19 @@ export async function addRateCard(input: { category: RateCategory; rate: number;
 export async function removeRateCard(id: string) {
   const { data } = await api.delete<ApiResponse<RateCards>>(`${BASE}/rate-cards/${id}`)
   return data.data
+}
+
+// ─── Saved inbox filters ───
+export async function getSavedFilters() {
+  const { data } = await api.get<ApiResponse<WaSavedFilter[]>>(`${BASE}/saved-filters`)
+  return Array.isArray(data.data) ? data.data : []
+}
+
+export async function createSavedFilter(name: string, criteria: InboxCriteria) {
+  const { data } = await api.post<ApiResponse<WaSavedFilter>>(`${BASE}/saved-filters`, { name, criteria })
+  return data.data
+}
+
+export async function deleteSavedFilter(id: string) {
+  await api.delete(`${BASE}/saved-filters/${id}`)
 }
